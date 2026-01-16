@@ -1,8 +1,7 @@
 import { tool } from "langchain";
 import { z } from "zod";
 
-
-export const loadProblemTool = tool(
+ const loadProblemTool = tool(
   async (input: { slug: string }) => {
     const { slug } = input;
     const normalizedSlug = slug
@@ -48,3 +47,6 @@ export const loadProblemTool = tool(
     }),
   }
 );
+
+
+export default loadProblemTool;
