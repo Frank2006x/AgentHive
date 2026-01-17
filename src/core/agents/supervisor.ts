@@ -13,8 +13,8 @@ const llm = new ChatGoogleGenerativeAI({
 });
 
 const outputSchema = z.object({
-  nextAgent: z.enum(["explainer", "loadProblem", "debugger", "END"]),
-  msg2Agent: z.string(),
+  nextAgent: z.enum(["explainer", "loadProblem", "debugger", "END"]).describe("The next agent to handle the user's request"),
+  msg2Agent: z.string().describe("Message to be sent to the next agent or user"),
 });
 
 const agent = createAgent({
