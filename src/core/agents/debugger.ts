@@ -51,3 +51,5 @@ const runDebuggerAgent = async (state: AgentState) => {
     },
   });
 };
+
+export default runDebuggerAgent;

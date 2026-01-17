@@ -31,7 +31,7 @@ const agent = createAgent({
 });
 
 const runSupervisorAgent = async (state: AgentState) => {
-  if (state.problem == "") {
+  if (state.problem.problemStatement === "") {
     return {
       nextAgent: "loadProblem",
       msg2Agent: `The problem is not loaded yet. Please load the problem first.`,
