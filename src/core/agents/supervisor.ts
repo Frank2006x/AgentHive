@@ -2,7 +2,7 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { createAgent, providerStrategy, SystemMessage } from "langchain";
 import { z } from "zod";
 import { AgentState } from "./state";
-
+import { END } from "@langchain/langgraph";
 import { Command } from "@langchain/langgraph";
 
 // Initialize Gemini LLM for supervisor
@@ -13,7 +13,7 @@ const llm = new ChatGoogleGenerativeAI({
 });
 
 const outputSchema = z.object({
-  nextAgent: z.enum(["explainer", "loadProblem", "debugger"]),
+  nextAgent: z.enum(["explainer", "loadProblem", "debugger", "END"]),
   msg2Agent: z.string(),
 });
 
@@ -47,6 +47,18 @@ const runSupervisorAgent = async (state: AgentState) => {
   });
   state.flow.push("supervisor");
   state.messages.push(response.structuredResponse.msg2Agent);
+  if (response.structuredResponse.nextAgent === "END") {
+    state.messages.push("Thank you for using the coding assistant. Goodbye!");
+    return new Command({
+      goto: END,
+      update: {
+        flow: state.flow,
+        messages: state.messages,
+        userQuestion: state.userQuestion,
+      },
+    });
+  }
+
   return new Command({
     goto: response.structuredResponse.nextAgent,
     update: {

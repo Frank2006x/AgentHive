@@ -1,13 +1,14 @@
-import { ChatGroq } from "@langchain/groq";
 import { AIMessage } from "@langchain/core/messages";
 import { AgentState } from "./state";
 import { createAgent, providerStrategy } from "langchain";
 import * as z from "zod";
 import { Command } from "@langchain/langgraph";
+import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 // Initialize Groq LLM
-const groqLLM = new ChatGroq({
-  model: "groq/compound",
-  apiKey: process.env.GROQ_API_KEY,
+
+const groqLLM = new ChatGoogleGenerativeAI({
+  model: "gemini-2.5-flash",
+  apiKey: process.env.GOOGLE_API_KEY,
   temperature: 0.1,
 });
 
