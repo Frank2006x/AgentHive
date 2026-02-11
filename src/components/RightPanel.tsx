@@ -1,358 +1,408 @@
 "use client";
-import { BookOpenCheck, Bug, Wrench, Info, ArrowUp } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useCodeStore } from "@/store/codeStore";
-import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupText,
-  InputGroupTextarea,
-} from "./ui/input-group";
+import { ModeSelector } from "./ModeSelector";
+import { ProblemInput } from "./ProblemInput";
+import { Button } from "./ui/button";
 
 const RightPanel: React.FC = () => {
-  const [isWide, setIsWide] = useState(true);
   const panelRef = useRef<HTMLDivElement>(null);
-  const [selectedAgent, setSelectedAgent] = useState<
-    "Lexa" | "Trace" | "Bolt" | null
-  >(null);
-  const { code, language } = useCodeStore();
-  const [question, setQuestion] = useState("Explain the code above.");
-  const [chat, setChat] = useState<string[]>([]);
-  useEffect(() => {
-    const observeResize = () => {
-      if (panelRef.current) {
-        const width = panelRef.current.offsetWidth;
-        setIsWide(width > 530);
-      }
-    };
 
-    observeResize();
+  const {
+    code,
+    mode,
+    problemName,
+    isLoading,
+    isStreaming,
+    streamingContent,
+    error,
+    flow,
+    // Study mode state
+    currentHintLevel,
+    hints,
+    // Power mode state
+    strategies,
+    selectedStrategy,
+    generatedCode,
+    complexityAnalysis,
+    testResults,
+    // Actions
+    appendStreamingContent,
+    setLoading,
+    setStreaming,
+    clearStreamingContent,
+    setError,
+    addFlowStep,
+    resetSession,
+  } = useCodeStore();
 
-    const resizeObserver = new ResizeObserver(observeResize);
-    if (panelRef.current) {
-      resizeObserver.observe(panelRef.current);
+  const [question, setQuestion] = useState("");
+
+  // Handle streaming response from API
+  const handleStartSession = useCallback(async () => {
+    if (!mode || !problemName) {
+      setError("Please select a mode and enter a problem name");
+      return;
     }
 
-    return () => {
-      resizeObserver.disconnect();
-    };
-  }, []);
+    setLoading(true);
+    setStreaming(true);
+    clearStreamingContent();
+    setError(null);
 
-  const handleRunClick = async () => {
-    console.log(
-      "Running agent with code and language:",
-      code,
-      language,
-      question
+    try {
+      const response = await fetch("/api/leetcode", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          mode,
+          problemName,
+          code,
+          question: question || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("No reader available");
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const event = JSON.parse(line.slice(6));
+
+              switch (event.type) {
+                case "start":
+                  console.log("Session started:", event);
+                  break;
+
+                case "update":
+                  if (event.step) {
+                    addFlowStep(event.step);
+                  }
+                  // Handle streaming content based on mode
+                  if (mode === "study" && event.data?.currentHint) {
+                    appendStreamingContent(event.data.currentHint);
+                  } else if (mode === "power" && event.data?.fullExplanation) {
+                    appendStreamingContent(event.data.fullExplanation);
+                  }
+                  break;
+
+                case "complete":
+                  console.log("Session completed:", event);
+                  break;
+
+                case "error":
+                  setError(event.error);
+                  break;
+              }
+            } catch (e) {
+              console.error("Failed to parse event:", line);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Session error:", err);
+      setError(err instanceof Error ? err.message : "Failed to start session");
+    } finally {
+      setLoading(false);
+      setStreaming(false);
+    }
+  }, [
+    mode,
+    problemName,
+    code,
+    question,
+    addFlowStep,
+    appendStreamingContent,
+    clearStreamingContent,
+    setError,
+    setLoading,
+    setStreaming,
+  ]);
+
+  const handleReset = () => {
+    resetSession();
+    setQuestion("");
+  };
+
+  // Render study mode content
+  const renderStudyMode = () => {
+    if (!mode) return null;
+
+    return (
+      <div className="flex flex-col gap-4">
+        {/* Hint Display */}
+        {hints.length > 0 && (
+          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-blue-400">
+                Hint {currentHintLevel - 1} of 5
+              </span>
+              {currentHintLevel > 1 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStartSession}
+                  disabled={isLoading || currentHintLevel > 5}
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : null}
+                  Next Hint
+                </Button>
+              )}
+            </div>
+            <p className="text-sm text-slate-300">{hints[hints.length - 1]}</p>
+          </div>
+        )}
+
+        {/* Progress */}
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-blue-500 transition-all duration-300"
+              style={{
+                width: `${Math.min((currentHintLevel - 1) * 20, 100)}%`,
+              }}
+            />
+          </div>
+          <span className="text-xs text-slate-500">
+            {Math.min(currentHintLevel - 1, 5)}/5
+          </span>
+        </div>
+      </div>
     );
-    const res = await axios.post("/api/Lexa", {
-      code,
-      language,
-      question,
-    });
-    console.log(res.data);
-    setChat((prev) => [...prev, res.data.answer.output]);
+  };
+
+  // Render power mode content
+  const renderPowerMode = () => {
+    if (!mode) return null;
+
+    return (
+      <div className="flex flex-col gap-4">
+        {/* Strategy Selection */}
+        {strategies.length > 0 && (
+          <div className="space-y-2">
+            <h4 className="text-sm font-medium text-slate-300">Strategies</h4>
+            <div className="grid gap-2">
+              {strategies.map((strategy, i: number) => (
+                <div
+                  key={i}
+                  className={`p-3 rounded-lg border cursor-pointer transition-colors ${
+                    selectedStrategy?.name === strategy.name
+                      ? "border-yellow-500/50 bg-yellow-500/10"
+                      : "border-slate-700 bg-slate-800/50 hover:bg-slate-800"
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-medium text-slate-200">
+                      {strategy.name}
+                    </span>
+                    <div className="flex gap-2 text-xs">
+                      <span className="text-yellow-500">
+                        {strategy.timeComplexity}
+                      </span>
+                      <span className="text-slate-500">|</span>
+                      <span className="text-blue-500">
+                        {strategy.spaceComplexity}
+                      </span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    {strategy.description}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Generated Code */}
+        {generatedCode && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h4 className="text-sm font-medium text-slate-300">Solution</h4>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigator.clipboard.writeText(generatedCode)}
+              >
+                Copy Code
+              </Button>
+            </div>
+            <pre className="p-4 rounded-lg bg-slate-900 border border-slate-800 overflow-x-auto">
+              <code className="text-sm font-mono text-slate-300">
+                {generatedCode}
+              </code>
+            </pre>
+          </div>
+        )}
+
+        {/* Complexity Analysis */}
+        {(complexityAnalysis.time || complexityAnalysis.space) && (
+          <div className="flex gap-4 p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+            {complexityAnalysis.time && (
+              <div>
+                <span className="text-xs text-slate-500">Time</span>
+                <p className="text-sm font-medium text-yellow-500">
+                  {complexityAnalysis.time}
+                </p>
+              </div>
+            )}
+            {complexityAnalysis.space && (
+              <div>
+                <span className="text-xs text-slate-500">Space</span>
+                <p className="text-sm font-medium text-blue-500">
+                  {complexityAnalysis.space}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Test Results */}
+        {testResults.feedback && (
+          <div
+            className={`p-3 rounded-lg border ${
+              testResults.passed
+                ? "bg-green-500/10 border-green-500/30"
+                : "bg-red-500/10 border-red-500/30"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-sm font-medium ${
+                  testResults.passed ? "text-green-400" : "text-red-400"
+                }`}
+              >
+                {testResults.passed ? "Tests Passed" : "Issues Found"}
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              {testResults.feedback.slice(0, 200)}...
+            </p>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
     <div ref={panelRef} className="flex h-full flex-col p-6">
-      {isWide ? (
-        <section className="flex gap-3 w-full justify-evenly" id="agents">
-          <div className="flex flex-col items-center gap-2">
-            <div
-              onClick={() => setSelectedAgent("Lexa")}
-              className={`rounded-full bg-muted flex items-center justify-center relative ${
-                selectedAgent === "Lexa"
-                  ? "ring-2 ring-blue-400 shadow-[0_0_24px_rgba(59,130,246,0.55)]"
-                  : ""
-              }`}
+      {/* Multi-Mode Interface */}
+      <div className="space-y-4 mb-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-200">
+            LeetCode Assistant
+          </h2>
+          {(mode || problemName) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="text-slate-400 hover:text-slate-200"
             >
-              <div className="absolute left-0 bg-muted w-15 h-15 rounded-full flex items-center justify-center ">
-                <div className=" bg-blue-500 w-10 h-10 rounded-full flex items-center justify-center">
-                  <BookOpenCheck />
-                </div>
+              Reset
+            </Button>
+          )}
+        </div>
+
+        <ModeSelector />
+
+        {mode && (
+          <>
+            <ProblemInput />
+
+            {/* Start Button */}
+            {problemName && (
+              <Button
+                onClick={handleStartSession}
+                disabled={isLoading || isStreaming}
+                className={`w-full ${
+                  mode === "study"
+                    ? "bg-blue-600 hover:bg-blue-700"
+                    : "bg-yellow-600 hover:bg-yellow-700"
+                } text-white`}
+              >
+                {isLoading || isStreaming ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    {isStreaming ? "Processing..." : "Starting..."}
+                  </>
+                ) : (
+                  <>
+                    {mode === "study"
+                      ? "Start Study Session"
+                      : "Generate Solution"}
+                  </>
+                )}
+              </Button>
+            )}
+
+            {/* Error Display */}
+            {error && (
+              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                {error}
               </div>
-              <div className="bg-blue-700 w-35 h-15 rounded-full flex items-center justify-center pr-2 pl-12 mx-auto">
-                <span className="text-white font-semibold text-md font-mono ">
-                  Lexa
-                </span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="More info about Lexa"
-                      className="absolute right-2 ml-2 hover:bg-blue-600 rounded-full p-1 transition-colors"
-                    >
-                      <Info size={16} className="text-white" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-[var(--card)] border-[var(--ring)] text-[var(--primary-foreground)]">
-                    <div className="text-center max-w-xs">
-                      <p className="font-semibold">Lexa - Code Explainer</p>
-                      <p className="text-xs opacity-80">
-                        Helps you understand code logic and structure clearly
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
+            )}
+
+            {/* Flow Steps */}
+            {flow.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {flow.map((step, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-0.5 text-xs bg-slate-700 rounded text-slate-400"
+                  >
+                    {step}
+                  </span>
+                ))}
               </div>
-            </div>
+            )}
+
+            {/* Mode-specific Panels */}
+            {mode === "study" ? renderStudyMode() : renderPowerMode()}
+          </>
+        )}
+      </div>
+
+      {/* Streaming Content Display */}
+      {isStreaming && streamingContent && (
+        <section className="mt-4 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+            <span className="text-sm text-slate-400">Processing...</span>
           </div>
-
-          <div className="flex flex-col items-center gap-2">
-            <div
-              onClick={() => setSelectedAgent("Trace")}
-              className={`rounded-full bg-muted flex items-center justify-center relative ${
-                selectedAgent === "Trace"
-                  ? "ring-2 ring-orange-400 shadow-[0_0_24px_rgba(234,88,12,0.55)]"
-                  : ""
-              }`}
-            >
-              <div className="absolute left-0 bg-muted w-15 h-15 rounded-full flex items-center justify-center ">
-                <div className="bg-red-500 w-10 h-10 rounded-full flex items-center justify-center">
-                  <Bug />
-                </div>
-              </div>
-              <div className="bg-orange-600 w-35 h-15 rounded-full flex items-center justify-center pr-2 pl-12 mx-auto">
-                <span className="text-white font-semibold text-md font-mono ">
-                  Trace
-                </span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="More info about Trace"
-                      className="ml-2 absolute right-2 hover:bg-orange-500 rounded-full p-1 transition-colors"
-                    >
-                      <Info size={16} className="text-white" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-[var(--card)] border-[var(--border)] text-[var(--destructive-foreground)]">
-                    <div className="text-center max-w-xs">
-                      <p className="font-semibold">Trace - Debugger</p>
-                      <p className="text-xs opacity-80">
-                        Hunts down and fixes your errors efficiently
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
+          <div className="prose prose-invert max-w-none text-sm">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {streamingContent}
+            </ReactMarkdown>
           </div>
-
-          <div className="flex flex-col items-center gap-2">
-            <div
-              onClick={() => setSelectedAgent("Bolt")}
-              className={`rounded-full bg-muted flex items-center justify-center relative ${
-                selectedAgent === "Bolt"
-                  ? "ring-2 ring-emerald-400 shadow-[0_0_24px_rgba(4,120,87,0.55)]"
-                  : ""
-              }`}
-            >
-              <div className="absolute left-0 bg-muted w-15 h-15 rounded-full flex items-center justify-center ">
-                <div className="bg-green-500 w-10 h-10 rounded-full flex items-center justify-center">
-                  <Wrench />
-                </div>
-              </div>
-              <div className="bg-emerald-700 w-35 h-15 rounded-full flex items-center justify-center pr-2 pl-12 mx-auto">
-                <span className="text-white font-semibold text-md font-mono ">
-                  Bolt
-                </span>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      aria-label="More info about Bolt"
-                      className="ml-2 absolute right-2 hover:bg-emerald-600 rounded-full p-1 transition-colors"
-                    >
-                      <Info size={16} className="text-white" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent className="bg-[var(--card)] border-[var(--border)] text-[var(--accent-foreground)]">
-                    <div className="text-center max-w-xs">
-                      <p className="font-semibold">Bolt - Optimizer</p>
-                      <p className="text-xs opacity-80">
-                        Fast, powerful, and fine-tunes your code for performance
-                      </p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
-          </div>
-        </section>
-      ) : (
-        <section className="flex justify-between gap-3 w-full" id="agents">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 cursor-pointer">
-                <div
-                  onClick={() => setSelectedAgent("Lexa")}
-                  className={`bg-muted w-20 h-20 rounded-full flex items-center justify-center ${
-                    selectedAgent === "Lexa"
-                      ? "ring-2 ring-blue-400 shadow-[0_0_24px_rgba(59,130,246,0.55)]"
-                      : ""
-                  }`}
-                >
-                  <div className="bg-blue-500 w-15 h-15 rounded-full flex items-center justify-center">
-                    <BookOpenCheck size={30} />
-                  </div>
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[var(--card)] border-[var(--border)] text-[var(--accent-foreground)]">
-              <div className="text-center">
-                <p className="font-semibold">Lexa</p>
-                <p className="text-xs text-muted-foreground">
-                  Code Explainer - Helps you understand code logic and structure
-                  clearly
-                </p>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 cursor-pointer">
-                <div
-                  onClick={() => setSelectedAgent("Trace")}
-                  className={`bg-muted w-20 h-20 rounded-full flex items-center justify-center ${
-                    selectedAgent === "Trace"
-                      ? "ring-2 ring-orange-400 shadow-[0_0_24px_rgba(234,88,12,0.55)]"
-                      : ""
-                  }`}
-                >
-                  <div className="bg-red-500 w-15 h-15 rounded-full flex items-center justify-center">
-                    <Bug size={30} />
-                  </div>
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[var(--card)] border-[var(--border)] text-[var(--accent-foreground)]">
-              <div className="text-center">
-                <p className="font-semibold">Trace</p>
-                <p className="text-xs text-muted-foreground">
-                  Debugger - Hunts down and fixes your errors efficiently
-                </p>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-2 cursor-pointer">
-                <div
-                  onClick={() => setSelectedAgent("Bolt")}
-                  className={`bg-muted w-20 h-20 rounded-full flex items-center justify-center ${
-                    selectedAgent === "Bolt"
-                      ? "ring-2 ring-emerald-400 shadow-[0_0_24px_rgba(4,120,87,0.55)]"
-                      : ""
-                  }`}
-                >
-                  <div className="bg-green-500 w-15 h-15 rounded-full flex items-center justify-center">
-                    <Wrench size={30} />
-                  </div>
-                </div>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent className="bg-[var(--card)] border-[var(--border)] text-[var(--accent-foreground)]">
-              <div className="text-center">
-                <p className="font-semibold">Bolt </p>
-                <p className="text-xs text-muted-foreground">
-                  Optimizer - Fast, powerful, and fine-tunes your code for
-                  performance
-                </p>
-              </div>
-            </TooltipContent>
-          </Tooltip>
         </section>
       )}
-      <section
-        id="chat"
-        className="bg-card h-full rounded-2xl p-4 mt-4 flex flex-col"
-      >
-        <div className="flex-1 overflow-y-auto">
-          {chat.map((message, index) => (
-            <div key={index} className="mb-4 prose prose-invert max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  code({ className, children, ...props }) {
-                    const isInline = !className;
-                    return isInline ? (
-                      <code
-                        className="bg-muted px-1.5 py-0.5 rounded text-sm font-mono"
-                        {...props}
-                      >
-                        {children}
-                      </code>
-                    ) : (
-                      <code
-                        className={`block bg-muted/50 p-4 rounded-lg overflow-x-auto font-mono text-sm ${
-                          className || ""
-                        }`}
-                        {...props}
-                      >
-                        {children}
-                      </code>
-                    );
-                  },
-                  pre({ children }) {
-                    return (
-                      <pre className="bg-muted/30 rounded-lg overflow-hidden my-4">
-                        {children}
-                      </pre>
-                    );
-                  },
-                }}
-              >
-                {message}
-              </ReactMarkdown>
-            </div>
-          ))}
-        </div>
-
-        <div className=" flex justify-evenly items-center">
-          <InputGroup>
-            <InputGroupTextarea
-              placeholder="Enter your message"
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-            />
-
-            <InputGroupAddon align="block-end">
-              <div className="flex items-center w-full pr-2 justify-between">
-                <button
-                  className="w-10 h-10 flex items-center justify-center rounded-2xl bg-white text-background hover:opacity-90 transition"
-                  onClick={() => handleRunClick()}
-                >
-                  <ArrowUp className="w-5 h-5" />
-                </button>
-                {selectedAgent ? (
-                  <InputGroupText className="text-white/50 font-semibold cursor-pointer whitespace-nowrap ">
-                    Agent {selectedAgent} on action
-                  </InputGroupText>
-                ) : null}
-              </div>
-            </InputGroupAddon>
-          </InputGroup>
-
-          {selectedAgent ? (
-            <InputGroupText className="text-white/50 font-semibold cursor-pointer whitespace-nowrap ">
-              Agent {selectedAgent} on action
-            </InputGroupText>
-          ) : null}
-        </div>
-      </section>
     </div>
   );
 };
