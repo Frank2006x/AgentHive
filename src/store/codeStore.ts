@@ -34,11 +34,9 @@ interface CodeStore {
   constraints: string[];
   examples: Array<{ input: string; output: string; explanation?: string }>;
 
-  // NEW: Study mode state
-  currentHintLevel: number;
-  hints: string[];
-  isStudyComplete: boolean;
-  studyConversation: ConversationEntry[];
+  // NEW: Study mode state (Chat-based)
+  conversationHistory: ConversationEntry[];
+  isSolutionComplete: boolean;
 
   // NEW: Power mode state
   strategies: Strategy[];
@@ -67,10 +65,8 @@ interface CodeStore {
   }) => void;
 
   // Study mode actions
-  addHint: (hint: string) => void;
-  nextHintLevel: () => void;
-  completeStudy: () => void;
-  addToStudyConversation: (entry: ConversationEntry) => void;
+  addToConversation: (entry: ConversationEntry) => void;
+  completeSolution: () => void;
   resetStudy: () => void;
 
   // Power mode actions
@@ -111,11 +107,9 @@ export const useCodeStore = create<CodeStore>()(
       constraints: [],
       examples: [],
 
-      // Study mode state
-      currentHintLevel: 1,
-      hints: [],
-      isStudyComplete: false,
-      studyConversation: [],
+      // Study mode state (Chat-based)
+      conversationHistory: [],
+      isSolutionComplete: false,
 
       // Power mode state
       strategies: [],
@@ -145,32 +139,23 @@ export const useCodeStore = create<CodeStore>()(
         })),
 
       // Study mode actions
-      addHint: (hint) =>
+      addToConversation: (entry) =>
         set((state) => ({
-          hints: [...state.hints, hint],
+          conversationHistory: [...state.conversationHistory, entry],
         })),
-      nextHintLevel: () =>
-        set((state) => ({
-          currentHintLevel: Math.min(state.currentHintLevel + 1, 5),
-        })),
-      completeStudy: () => set({ isStudyComplete: true }),
-      addToStudyConversation: (entry) =>
-        set((state) => ({
-          studyConversation: [...state.studyConversation, entry],
-        })),
+      completeSolution: () => set({ isSolutionComplete: true }),
       resetStudy: () =>
         set({
-          currentHintLevel: 1,
-          hints: [],
-          isStudyComplete: false,
-          studyConversation: [],
+          conversationHistory: [],
+          isSolutionComplete: false,
         }),
 
       // Power mode actions
       setStrategies: (strategies) => set({ strategies }),
       selectStrategy: (strategy) => set({ selectedStrategy: strategy }),
       setGeneratedCode: (code) => set({ generatedCode: code }),
-      setComplexityAnalysis: (analysis) => set({ complexityAnalysis: analysis }),
+      setComplexityAnalysis: (analysis) =>
+        set({ complexityAnalysis: analysis }),
       setExplanation: (explanation) => set({ explanation }),
       setTestResults: (results) => set({ testResults: results }),
       resetPower: () =>
@@ -193,10 +178,8 @@ export const useCodeStore = create<CodeStore>()(
           category: "",
           constraints: [],
           examples: [],
-          currentHintLevel: 1,
-          hints: [],
-          isStudyComplete: false,
-          studyConversation: [],
+          conversationHistory: [],
+          isSolutionComplete: false,
           strategies: [],
           selectedStrategy: null,
           generatedCode: "",
@@ -223,6 +206,6 @@ export const useCodeStore = create<CodeStore>()(
         })),
       clearFlow: () => set({ flow: [] }),
     }),
-    { name: "CodeStore" }
-  )
+    { name: "CodeStore" },
+  ),
 );

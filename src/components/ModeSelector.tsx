@@ -24,14 +24,14 @@ export function ModeSelector({ className }: ModeSelectorProps) {
             "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all duration-200",
             mode === "study"
               ? "border-blue-500 bg-blue-500/10 text-blue-400"
-              : "border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:bg-slate-800"
+              : "border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:bg-slate-800",
           )}
         >
           <BookOpen className="w-6 h-6" />
           <div className="text-center">
             <div className="font-semibold text-sm">Study Mode</div>
             <div className="text-xs opacity-70 mt-1">
-              Progressive hints & guidance
+              Interactive chat tutoring
             </div>
           </div>
         </button>
@@ -43,7 +43,7 @@ export function ModeSelector({ className }: ModeSelectorProps) {
             "flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-2 transition-all duration-200",
             mode === "power"
               ? "border-yellow-500 bg-yellow-500/10 text-yellow-400"
-              : "border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:bg-slate-800"
+              : "border-slate-700 bg-slate-800/50 text-slate-400 hover:border-slate-600 hover:bg-slate-800",
           )}
         >
           <Zap className="w-6 h-6" />
@@ -63,13 +63,14 @@ export function ModeSelector({ className }: ModeSelectorProps) {
             "text-xs p-3 rounded-lg mt-2",
             mode === "study"
               ? "bg-blue-500/5 text-blue-300 border border-blue-500/20"
-              : "bg-yellow-500/5 text-yellow-300 border border-yellow-500/20"
+              : "bg-yellow-500/5 text-yellow-300 border border-yellow-500/20",
           )}
         >
           {mode === "study" ? (
             <>
-              <strong>Study Mode:</strong> Learn through progressive hints and
-              guided discovery. Perfect for understanding the problem deeply.
+              <strong>Study Mode:</strong> Learn through interactive chat-based
+              tutoring and guided discovery. Perfect for understanding the
+              problem deeply.
             </>
           ) : (
             <>

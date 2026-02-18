@@ -11,14 +11,14 @@ export async function POST(req: NextRequest) {
     if (!mode || !problemName) {
       return new Response(
         JSON.stringify({ error: "Mode and problem name are required" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
     if (mode !== "study" && mode !== "power") {
       return new Response(
         JSON.stringify({ error: "Mode must be 'study' or 'power'" }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        { status: 400, headers: { "Content-Type": "application/json" } },
       );
     }
 
@@ -45,8 +45,8 @@ export async function POST(req: NextRequest) {
                 type: "start",
                 mode,
                 problemName,
-              })}\n\n`
-            )
+              })}\n\n`,
+            ),
           );
 
           // Stream from the graph
@@ -69,8 +69,6 @@ export async function POST(req: NextRequest) {
 
                 // Study mode fields
                 ...(mode === "study" && {
-                  hintLevel: state.studyMode.hintLevel,
-                  currentHint: state.studyMode.currentHint,
                   conversationHistory: state.studyMode.conversationHistory,
                   isSolutionComplete: state.studyMode.isSolutionComplete,
                   awaitingUserInput: state.studyMode.awaitingUserInput,
@@ -89,7 +87,7 @@ export async function POST(req: NextRequest) {
             };
 
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(event)}\n\n`)
+              encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
             );
           }
 
@@ -99,8 +97,8 @@ export async function POST(req: NextRequest) {
               `data: ${JSON.stringify({
                 type: "complete",
                 message: "Session completed successfully",
-              })}\n\n`
-            )
+              })}\n\n`,
+            ),
           );
           controller.close();
         } catch (error) {
@@ -110,8 +108,8 @@ export async function POST(req: NextRequest) {
               `data: ${JSON.stringify({
                 type: "error",
                 error: error instanceof Error ? error.message : "Unknown error",
-              })}\n\n`
-            )
+              })}\n\n`,
+            ),
           );
           controller.close();
         }
@@ -132,7 +130,7 @@ export async function POST(req: NextRequest) {
         error: "Internal server error",
         details: error instanceof Error ? error.message : "Unknown error",
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      { status: 500, headers: { "Content-Type": "application/json" } },
     );
   }
 }

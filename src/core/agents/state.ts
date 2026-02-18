@@ -27,11 +27,9 @@ export interface ConversationEntry {
   timestamp: number;
 }
 
-// Study Mode specific fields
+// Study Mode specific fields (Chat-based tutoring)
 export interface StudyModeState {
   conversationHistory: ConversationEntry[];
-  hintLevel: number; // 1-5 progressive hint system
-  currentHint: string;
   userCodeAttempts: string[];
   userUnderstandingLevel: "beginner" | "intermediate" | "advanced";
   topicsCovered: string[];
@@ -86,8 +84,6 @@ export const LeetCodeStateSchema = Annotation.Root({
     value: (x, y) => ({ ...x, ...y }),
     default: () => ({
       conversationHistory: [],
-      hintLevel: 1,
-      currentHint: "",
       userCodeAttempts: [],
       userUnderstandingLevel: "beginner",
       topicsCovered: [],
@@ -132,7 +128,10 @@ export const LeetCodeStateSchema = Annotation.Root({
 export type LeetCodeState = typeof LeetCodeStateSchema.State;
 
 // Initial state creator
-export const createInitialState = (mode: Mode = "study", problemName: string = ""): LeetCodeState => ({
+export const createInitialState = (
+  mode: Mode = "study",
+  problemName: string = "",
+): LeetCodeState => ({
   mode,
   problemName,
   problemStatement: "",
@@ -142,8 +141,6 @@ export const createInitialState = (mode: Mode = "study", problemName: string = "
   difficulty: "",
   studyMode: {
     conversationHistory: [],
-    hintLevel: 1,
-    currentHint: "",
     userCodeAttempts: [],
     userUnderstandingLevel: "beginner",
     topicsCovered: [],

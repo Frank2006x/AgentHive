@@ -1,6 +1,6 @@
 "use client";
 import { Loader2 } from "lucide-react";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { useCodeStore } from "@/store/codeStore";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -10,6 +10,7 @@ import { Button } from "./ui/button";
 
 const RightPanel: React.FC = () => {
   const panelRef = useRef<HTMLDivElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   const {
     code,
@@ -20,9 +21,9 @@ const RightPanel: React.FC = () => {
     streamingContent,
     error,
     flow,
-    // Study mode state
-    currentHintLevel,
-    hints,
+    // Study mode state (Chat-based)
+    conversationHistory,
+    isSolutionComplete,
     // Power mode state
     strategies,
     selectedStrategy,
@@ -40,6 +41,11 @@ const RightPanel: React.FC = () => {
   } = useCodeStore();
 
   const [question, setQuestion] = useState("");
+
+  // Auto-scroll to bottom when conversation updates
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [conversationHistory]);
 
   // Handle streaming response from API
   const handleStartSession = useCallback(async () => {
@@ -102,8 +108,14 @@ const RightPanel: React.FC = () => {
                     addFlowStep(event.step);
                   }
                   // Handle streaming content based on mode
-                  if (mode === "study" && event.data?.currentHint) {
-                    appendStreamingContent(event.data.currentHint);
+                  if (mode === "study" && event.data?.conversationHistory) {
+                    const lastMessage =
+                      event.data.conversationHistory[
+                        event.data.conversationHistory.length - 1
+                      ];
+                    if (lastMessage && lastMessage.role === "assistant") {
+                      appendStreamingContent(lastMessage.message);
+                    }
                   } else if (mode === "power" && event.data?.fullExplanation) {
                     appendStreamingContent(event.data.fullExplanation);
                   }
@@ -117,8 +129,8 @@ const RightPanel: React.FC = () => {
                   setError(event.error);
                   break;
               }
-            } catch (e) {
-              console.error("Failed to parse event:", line);
+            } catch (err) {
+              console.error("Failed to parse event:", line, err);
             }
           }
         }
@@ -148,51 +160,102 @@ const RightPanel: React.FC = () => {
     setQuestion("");
   };
 
-  // Render study mode content
+  // Render study mode content (Chat-based)
   const renderStudyMode = () => {
     if (!mode) return null;
 
     return (
-      <div className="flex flex-col gap-4">
-        {/* Hint Display */}
-        {hints.length > 0 && (
-          <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-blue-400">
-                Hint {currentHintLevel - 1} of 5
-              </span>
-              {currentHintLevel > 1 && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleStartSession}
-                  disabled={isLoading || currentHintLevel > 5}
+      <div className="flex flex-col gap-4 min-h-0 flex-1">
+        {/* Chat Conversation History */}
+        <div className="flex-1 overflow-y-auto p-4 bg-slate-800/30 rounded-lg border border-slate-700 min-h-0">
+          <div className="space-y-3">
+            {conversationHistory.length === 0 ? (
+              <div className="text-center text-slate-500 text-sm py-8">
+                👋 Hi! I&apos;m your programming tutor. Ask me anything about
+                the problem, or submit your code for review!
+              </div>
+            ) : (
+              conversationHistory.map((entry, i) => (
+                <div
+                  key={i}
+                  className={`p-3 rounded-lg ${
+                    entry.role === "user"
+                      ? "bg-blue-500/10 border border-blue-500/30 ml-8"
+                      : "bg-slate-700/50 border border-slate-600 mr-8"
+                  }`}
                 >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : null}
-                  Next Hint
-                </Button>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-slate-400">
+                      {entry.role === "user" ? "You" : "Tutor"}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {new Date(entry.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                      {entry.message}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              ))
+            )}
+            <div ref={chatEndRef} />
+          </div>
+        </div>
+
+        {/* Chat Input */}
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Ask a question about the problem..."
+              className="flex-1 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 focus:border-blue-500 focus:outline-none text-sm"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && !isLoading && question.trim()) {
+                  handleStartSession();
+                }
+              }}
+              disabled={isLoading}
+            />
+            <Button
+              onClick={handleStartSession}
+              disabled={isLoading || !question.trim()}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isLoading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                "Send"
               )}
-            </div>
-            <p className="text-sm text-slate-300">{hints[hints.length - 1]}</p>
+            </Button>
+          </div>
+
+          {/* Code Submission Button */}
+          <Button
+            onClick={() => {
+              // Submit current code from left panel for review
+              setQuestion("Please review my code");
+              handleStartSession();
+            }}
+            variant="outline"
+            className="w-full"
+            disabled={isLoading || !code.trim()}
+          >
+            Submit Code for Review
+          </Button>
+        </div>
+
+        {/* Solution Status */}
+        {isSolutionComplete && (
+          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/30">
+            <span className="text-sm font-medium text-green-400">
+              ✅ Great job! You&apos;ve completed the solution!
+            </span>
           </div>
         )}
-
-        {/* Progress */}
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-2 bg-slate-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 transition-all duration-300"
-              style={{
-                width: `${Math.min((currentHintLevel - 1) * 20, 100)}%`,
-              }}
-            />
-          </div>
-          <span className="text-xs text-slate-500">
-            {Math.min(currentHintLevel - 1, 5)}/5
-          </span>
-        </div>
       </div>
     );
   };
@@ -313,7 +376,7 @@ const RightPanel: React.FC = () => {
   return (
     <div ref={panelRef} className="flex h-full flex-col p-6">
       {/* Multi-Mode Interface */}
-      <div className="space-y-4 mb-4">
+      <div className="flex flex-col gap-4 flex-1 min-h-0">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-200">
             LeetCode Assistant

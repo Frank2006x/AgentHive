@@ -12,7 +12,7 @@ const llm = new ChatGoogleGenerativeAI({
 
 const runProblemAnalyzer = async (state: LeetCodeState) => {
   console.log("ProblemAnalyzer: Analyzing problem...");
-  
+
   const prompt = `Analyze this LeetCode problem and provide:
 1. Difficulty level (Easy/Medium/Hard)
 2. Problem category (e.g., Array, Dynamic Programming, Graph, etc.)
@@ -32,37 +32,40 @@ Concepts: [comma-separated list]`;
       new SystemMessage("You are a problem analyzer for LeetCode problems."),
       new HumanMessage(prompt),
     ]);
-    
+
     const content = response.content as string;
-    
+
     // Parse the response
     const difficultyMatch = content.match(/Difficulty:\s*(Easy|Medium|Hard)/i);
     const categoryMatch = content.match(/Category:\s*([^\n]+)/i);
     const conceptsMatch = content.match(/Concepts:\s*([^\n]+)/i);
-    
+
     const difficulty = difficultyMatch?.[1] || "Unknown";
     const category = categoryMatch?.[1]?.trim() || "General";
-    
+
     console.log(`ProblemAnalyzer: ${difficulty} - ${category}`);
-    
+
     // Route based on mode
-    const nextNode = state.mode === "study" ? "hintGenerator" : "strategist";
-    
+    const nextNode = state.mode === "study" ? "chatTutor" : "strategist";
+
     return new Command({
       goto: nextNode,
       update: {
         difficulty,
         problemCategory: category,
-        messages: [...state.messages, `Problem analyzed: ${difficulty} difficulty, ${category}`],
+        messages: [
+          ...state.messages,
+          `Problem analyzed: ${difficulty} difficulty, ${category}`,
+        ],
         flow: [...state.flow, "problemAnalyzer"],
       },
     });
   } catch (error) {
     console.error("ProblemAnalyzer: Error", error);
-    
+
     // Continue even if analysis fails
-    const nextNode = state.mode === "study" ? "hintGenerator" : "strategist";
-    
+    const nextNode = state.mode === "study" ? "chatTutor" : "strategist";
+
     return new Command({
       goto: nextNode,
       update: {
