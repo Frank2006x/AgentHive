@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Command, END } from "@langchain/langgraph";
-import { LeetCodeState } from "./state";
+import { PowerStateType } from "./state";
 
 // Initialize Gemini LLM
 const llm = new ChatGoogleGenerativeAI({
@@ -10,7 +10,7 @@ const llm = new ChatGoogleGenerativeAI({
   temperature: 0.2,
 });
 
-const runExplainer = async (state: LeetCodeState) => {
+const runExplainer = async (state: PowerStateType) => {
   console.log("Explainer: Generating detailed explanation...");
   
   const prompt = `Provide a comprehensive explanation for this LeetCode problem solution.
@@ -20,20 +20,20 @@ Statement: ${state.problemStatement}
 Difficulty: ${state.difficulty}
 Category: ${state.problemCategory}
 
-${state.powerMode.selectedStrategy ? `
-Approach: ${state.powerMode.selectedStrategy.name}
-Time Complexity: ${state.powerMode.selectedStrategy.timeComplexity}
-Space Complexity: ${state.powerMode.selectedStrategy.spaceComplexity}
+${state.selectedStrategy ? `
+Approach: ${state.selectedStrategy.name}
+Time Complexity: ${state.selectedStrategy.timeComplexity}
+Space Complexity: ${state.selectedStrategy.spaceComplexity}
 ` : ""}
 
 Solution Code:
 \`\`\`python
-${state.powerMode.finalCode}
+${state.finalCode}
 \`\`\`
 
-${state.powerMode.testResults.feedback ? `
+${state.testResults.feedback ? `
 Code Review:
-${state.powerMode.testResults.feedback}
+${state.testResults.feedback}
 ` : ""}
 
 Please provide:
@@ -64,16 +64,13 @@ Make it educational and clear.`;
     return new Command({
       goto: END,
       update: {
-        powerMode: {
-          ...state.powerMode,
-          fullExplanation: explanation,
-          complexityAnalysis: {
-            time: timeMatch?.[0] || "Unknown",
-            space: spaceMatch?.[0] || "Unknown",
-          },
+        fullExplanation: explanation,
+        complexityAnalysis: {
+          time: timeMatch?.[0] || "Unknown",
+          space: spaceMatch?.[0] || "Unknown",
         },
-        messages: [...state.messages, "Generated complete solution with explanation"],
-        flow: [...state.flow, "explainer"],
+        messages: ["Generated complete solution with explanation"],
+        flow: ["explainer"],
       },
     });
   } catch (error) {
@@ -81,8 +78,8 @@ Make it educational and clear.`;
     return new Command({
       goto: END,
       update: {
-        messages: [...state.messages, "Error generating explanation"],
-        flow: [...state.flow, "explainer"],
+        messages: ["Error generating explanation"],
+        flow: ["explainer"],
       },
     });
   }

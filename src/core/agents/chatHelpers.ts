@@ -1,4 +1,4 @@
-import { LeetCodeState, ConversationEntry } from "./state";
+import { StudyStateType, ConversationEntry } from "./state";
 
 /**
  * Helper functions for the chat-based tutoring system
@@ -8,9 +8,9 @@ import { LeetCodeState, ConversationEntry } from "./state";
  * Add user code attempt to the state
  */
 export function addUserCodeAttempt(
-  state: LeetCodeState,
+  state: StudyStateType,
   code: string,
-): Partial<LeetCodeState> {
+): Partial<StudyStateType> {
   const userMessage: ConversationEntry = {
     role: "user",
     message: `Here's my code attempt:\n\`\`\`\n${code}\n\`\`\``,
@@ -18,15 +18,9 @@ export function addUserCodeAttempt(
   };
 
   return {
-    studyMode: {
-      ...state.studyMode,
-      userCodeAttempts: [...state.studyMode.userCodeAttempts, code],
-      conversationHistory: [
-        ...state.studyMode.conversationHistory,
-        userMessage,
-      ],
-      awaitingUserInput: false,
-    },
+    userCodeAttempts: [code],
+    conversationHistory: [userMessage],
+    awaitingUserInput: false,
   };
 }
 
@@ -34,9 +28,9 @@ export function addUserCodeAttempt(
  * Add user question to the state
  */
 export function addUserQuestion(
-  state: LeetCodeState,
+  state: StudyStateType,
   question: string,
-): Partial<LeetCodeState> {
+): Partial<StudyStateType> {
   const userMessage: ConversationEntry = {
     role: "user",
     message: question,
@@ -44,15 +38,9 @@ export function addUserQuestion(
   };
 
   return {
-    studyMode: {
-      ...state.studyMode,
-      userQuestions: [...state.studyMode.userQuestions, question],
-      conversationHistory: [
-        ...state.studyMode.conversationHistory,
-        userMessage,
-      ],
-      awaitingUserInput: false,
-    },
+    userQuestions: [question],
+    conversationHistory: [userMessage],
+    awaitingUserInput: false,
   };
 }
 
@@ -60,9 +48,9 @@ export function addUserQuestion(
  * Add general user message to the conversation
  */
 export function addUserMessage(
-  state: LeetCodeState,
+  state: StudyStateType,
   message: string,
-): Partial<LeetCodeState> {
+): Partial<StudyStateType> {
   const userMessage: ConversationEntry = {
     role: "user",
     message: message,
@@ -70,36 +58,30 @@ export function addUserMessage(
   };
 
   return {
-    studyMode: {
-      ...state.studyMode,
-      conversationHistory: [
-        ...state.studyMode.conversationHistory,
-        userMessage,
-      ],
-      awaitingUserInput: false,
-    },
+    conversationHistory: [userMessage],
+    awaitingUserInput: false,
   };
 }
 
 /**
  * Check if the conversation indicates the user might be stuck
  */
-export function isUserStuck(state: LeetCodeState): boolean {
-  const recentMessages = state.studyMode.conversationHistory.slice(-6);
+export function isUserStuck(state: StudyStateType): boolean {
+  const recentMessages = state.conversationHistory.slice(-6);
   const userMessages = recentMessages.filter((msg) => msg.role === "user");
 
   // If user has asked multiple questions recently without code attempts
   if (
     userMessages.length >= 3 &&
-    state.studyMode.userCodeAttempts.length === 0
+    state.userCodeAttempts.length === 0
   ) {
     return true;
   }
 
   // If user has made multiple failed attempts
   if (
-    state.studyMode.userCodeAttempts.length >= 3 &&
-    !state.studyMode.isSolutionComplete
+    state.userCodeAttempts.length >= 3 &&
+    !state.isSolutionComplete
   ) {
     return true;
   }
@@ -110,8 +92,8 @@ export function isUserStuck(state: LeetCodeState): boolean {
 /**
  * Get conversation summary for context
  */
-export function getConversationSummary(state: LeetCodeState): string {
-  const history = state.studyMode.conversationHistory;
+export function getConversationSummary(state: StudyStateType): string {
+  const history = state.conversationHistory;
   if (history.length === 0) return "No conversation yet.";
 
   const recent = history
@@ -126,10 +108,10 @@ export function getConversationSummary(state: LeetCodeState): string {
  * Example function to simulate user interactions (for testing)
  */
 export function simulateUserInteraction(
-  state: LeetCodeState,
+  state: StudyStateType,
   type: "code" | "question" | "message",
   content: string,
-): Partial<LeetCodeState> {
+): Partial<StudyStateType> {
   switch (type) {
     case "code":
       return addUserCodeAttempt(state, content);

@@ -1,10 +1,10 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Command, END } from "@langchain/langgraph";
-import { LeetCodeState } from "./state";
+import { StudyStateType, PowerStateType } from "./state";
 import loadProblemTool from "../tools/leetcode";
 
-const runProblemFetcher = async (state: LeetCodeState) => {
+const runProblemFetcher = async (state: StudyStateType | PowerStateType) => {
   console.log("ProblemFetcher: Fetching problem data...");
   
   try {
@@ -53,8 +53,8 @@ const runProblemFetcher = async (state: LeetCodeState) => {
         problemStatement: problemStatement.slice(0, 2000),
         constraints: constraints.slice(0, 10),
         examples: examples.slice(0, 5),
-        messages: [...state.messages, `Fetched problem: ${state.problemName}`],
-        flow: [...state.flow, "problemFetcher"],
+        messages: [`Fetched problem: ${state.problemName}`],
+        flow: ["problemFetcher"],
       },
     });
   } catch (error) {
@@ -62,9 +62,9 @@ const runProblemFetcher = async (state: LeetCodeState) => {
     return new Command({
       goto: END,
       update: {
-        errorMessages: [...state.errorMessages, `Failed to fetch problem: ${error}`],
-        messages: [...state.messages, "Error: Could not fetch problem from LeetCode"],
-        flow: [...state.flow, "problemFetcher"],
+        errorMessages: [`Failed to fetch problem: ${error}`],
+        messages: ["Error: Could not fetch problem from LeetCode"],
+        flow: ["problemFetcher"],
       },
     });
   }

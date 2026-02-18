@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
-import { LeetCodeState } from "./state";
+import { PowerStateType } from "./state";
 
 // Initialize Gemini LLM
 const llm = new ChatGoogleGenerativeAI({
@@ -10,7 +10,7 @@ const llm = new ChatGoogleGenerativeAI({
   temperature: 0.1,
 });
 
-const runTestValidator = async (state: LeetCodeState) => {
+const runTestValidator = async (state: PowerStateType) => {
   console.log("TestValidator: Reviewing solution code...");
   
   const prompt = `Review this solution code for the LeetCode problem "${state.problemName}".
@@ -28,7 +28,7 @@ Output: ${ex.output}`).join("\n\n")}
 
 Solution Code:
 \`\`\`python
-${state.powerMode.finalCode}
+${state.finalCode}
 \`\`\`
 
 Provide a detailed review:
@@ -61,15 +61,12 @@ FEEDBACK: [Detailed feedback]`;
     return new Command({
       goto: "explainer",
       update: {
-        powerMode: {
-          ...state.powerMode,
-          testResults: {
-            passed,
-            feedback: review,
-          },
+        testResults: {
+          passed,
+          feedback: review,
         },
-        messages: [...state.messages, `Code review: ${passed ? "PASSED" : "NEEDS_IMPROVEMENT"}`],
-        flow: [...state.flow, "testValidator"],
+        messages: [`Code review: ${passed ? "PASSED" : "NEEDS_IMPROVEMENT"}`],
+        flow: ["testValidator"],
       },
     });
   } catch (error) {
@@ -77,8 +74,8 @@ FEEDBACK: [Detailed feedback]`;
     return new Command({
       goto: "explainer",
       update: {
-        messages: [...state.messages, "Error during code validation"],
-        flow: [...state.flow, "testValidator"],
+        messages: ["Error during code validation"],
+        flow: ["testValidator"],
       },
     });
   }

@@ -60,13 +60,15 @@ const RightPanel: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch("/api/leetcode", {
+      // Select the correct API endpoint based on mode
+      const endpoint = mode === "study" ? "/api/leetcode/study" : "/api/leetcode/power";
+
+      const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          mode,
           problemName,
           code,
           language,

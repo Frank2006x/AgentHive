@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
-import { LeetCodeState, Strategy } from "./state";
+import { PowerStateType, Strategy } from "./state";
 
 // Initialize Gemini LLM
 const llm = new ChatGoogleGenerativeAI({
@@ -10,7 +10,7 @@ const llm = new ChatGoogleGenerativeAI({
   temperature: 0.2,
 });
 
-const runStrategist = async (state: LeetCodeState) => {
+const runStrategist = async (state: PowerStateType) => {
   console.log("Strategist: Generating solution strategies...");
   
   const prompt = `You are a senior software engineer designing solutions for this LeetCode problem.
@@ -83,13 +83,10 @@ Recommend the best strategy based on the constraints and typical LeetCode expect
     return new Command({
       goto: "codeGenerator",
       update: {
-        powerMode: {
-          ...state.powerMode,
-          strategies,
-          selectedStrategy,
-        },
-        messages: [...state.messages, `Generated ${strategies.length} solution strategies`],
-        flow: [...state.flow, "strategist"],
+        strategies,
+        selectedStrategy,
+        messages: [`Generated ${strategies.length} solution strategies`],
+        flow: ["strategist"],
       },
     });
   } catch (error) {
@@ -97,8 +94,8 @@ Recommend the best strategy based on the constraints and typical LeetCode expect
     return new Command({
       goto: "codeGenerator",
       update: {
-        messages: [...state.messages, "Error generating strategies, proceeding with default"],
-        flow: [...state.flow, "strategist"],
+        messages: ["Error generating strategies, proceeding with default"],
+        flow: ["strategist"],
       },
     });
   }

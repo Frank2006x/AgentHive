@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Command, END } from "@langchain/langgraph";
-import { LeetCodeState } from "./state";
+import { StudyStateType } from "./state";
 
 // Initialize Gemini LLM
 const llm = new ChatGoogleGenerativeAI({
@@ -10,35 +10,35 @@ const llm = new ChatGoogleGenerativeAI({
   temperature: 0.3,
 });
 
-const runChatTutor = async (state: LeetCodeState) => {
+const runChatTutor = async (state: StudyStateType) => {
   console.log("ChatTutor: Analyzing user input and providing guidance...");
 
   // Check if solution is already complete
-  if (state.studyMode.isSolutionComplete) {
+  if (state.isSolutionComplete) {
     console.log("ChatTutor: Session already complete");
     return new Command({
       goto: END,
       update: {
-        messages: [...state.messages, "Tutoring session completed!"],
-        flow: [...state.flow, "chatTutor"],
+        messages: ["Tutoring session completed!"],
+        flow: ["chatTutor"],
       },
     });
   }
 
   // If user has provided code, analyze it and provide guidance
-  if (state.studyMode.userCodeAttempts.length > 0) {
+  if (state.userCodeAttempts.length > 0) {
     const lastCode =
-      state.studyMode.userCodeAttempts[
-        state.studyMode.userCodeAttempts.length - 1
+      state.userCodeAttempts[
+        state.userCodeAttempts.length - 1
       ];
 
     return await analyzeUserCode(state, lastCode);
   }
 
   // If user has asked questions, answer them
-  if (state.studyMode.userQuestions.length > 0) {
+  if (state.userQuestions.length > 0) {
     const lastQuestion =
-      state.studyMode.userQuestions[state.studyMode.userQuestions.length - 1];
+      state.userQuestions[state.userQuestions.length - 1];
 
     return await answerUserQuestion(state, lastQuestion);
   }
@@ -47,8 +47,8 @@ const runChatTutor = async (state: LeetCodeState) => {
   return await provideInitialGuidance(state);
 };
 
-const analyzeUserCode = async (state: LeetCodeState, code: string) => {
-  const conversationContext = state.studyMode.conversationHistory
+const analyzeUserCode = async (state: StudyStateType, code: string) => {
+  const conversationContext = state.conversationHistory
     .slice(-5) // Last 5 messages for context
     .map((entry) => `${entry.role}: ${entry.message}`)
     .join("\n");
@@ -102,20 +102,11 @@ Be encouraging, educational, and guide them toward the solution without revealin
     return new Command({
       goto: "dialogueManager",
       update: {
-        studyMode: {
-          ...state.studyMode,
-          conversationHistory: [
-            ...state.studyMode.conversationHistory,
-            newEntry,
-          ],
-          isSolutionComplete: seemsCorrect,
-          awaitingUserInput: true,
-        },
-        messages: [
-          ...state.messages,
-          "Analyzed user code and provided feedback",
-        ],
-        flow: [...state.flow, "chatTutor"],
+        conversationHistory: [newEntry],
+        isSolutionComplete: seemsCorrect,
+        awaitingUserInput: true,
+        messages: ["Analyzed user code and provided feedback"],
+        flow: ["chatTutor"],
       },
     });
   } catch (error) {
@@ -123,15 +114,15 @@ Be encouraging, educational, and guide them toward the solution without revealin
     return new Command({
       goto: "dialogueManager",
       update: {
-        messages: [...state.messages, "Error analyzing code"],
-        flow: [...state.flow, "chatTutor"],
+        messages: ["Error analyzing code"],
+        flow: ["chatTutor"],
       },
     });
   }
 };
 
-const answerUserQuestion = async (state: LeetCodeState, question: string) => {
-  const conversationContext = state.studyMode.conversationHistory
+const answerUserQuestion = async (state: StudyStateType, question: string) => {
+  const conversationContext = state.conversationHistory
     .slice(-5)
     .map((entry) => `${entry.role}: ${entry.message}`)
     .join("\n");
@@ -175,16 +166,10 @@ Be educational and supportive.`;
     return new Command({
       goto: "dialogueManager",
       update: {
-        studyMode: {
-          ...state.studyMode,
-          conversationHistory: [
-            ...state.studyMode.conversationHistory,
-            newEntry,
-          ],
-          awaitingUserInput: true,
-        },
-        messages: [...state.messages, "Answered user question"],
-        flow: [...state.flow, "chatTutor"],
+        conversationHistory: [newEntry],
+        awaitingUserInput: true,
+        messages: ["Answered user question"],
+        flow: ["chatTutor"],
       },
     });
   } catch (error) {
@@ -192,14 +177,14 @@ Be educational and supportive.`;
     return new Command({
       goto: "dialogueManager",
       update: {
-        messages: [...state.messages, "Error answering question"],
-        flow: [...state.flow, "chatTutor"],
+        messages: ["Error answering question"],
+        flow: ["chatTutor"],
       },
     });
   }
 };
 
-const provideInitialGuidance = async (state: LeetCodeState) => {
+const provideInitialGuidance = async (state: StudyStateType) => {
   const prompt = `You are starting a tutoring session for this LeetCode problem. Provide initial guidance.
 
 Problem: ${state.problemName}
@@ -237,16 +222,10 @@ Don't give any hints about the solution yet.`;
     return new Command({
       goto: "dialogueManager",
       update: {
-        studyMode: {
-          ...state.studyMode,
-          conversationHistory: [
-            ...state.studyMode.conversationHistory,
-            newEntry,
-          ],
-          awaitingUserInput: true,
-        },
-        messages: [...state.messages, "Provided initial tutoring guidance"],
-        flow: [...state.flow, "chatTutor"],
+        conversationHistory: [newEntry],
+        awaitingUserInput: true,
+        messages: ["Provided initial tutoring guidance"],
+        flow: ["chatTutor"],
       },
     });
   } catch (error) {
@@ -254,8 +233,8 @@ Don't give any hints about the solution yet.`;
     return new Command({
       goto: "dialogueManager",
       update: {
-        messages: [...state.messages, "Error providing initial guidance"],
-        flow: [...state.flow, "chatTutor"],
+        messages: ["Error providing initial guidance"],
+        flow: ["chatTutor"],
       },
     });
   }

@@ -1,20 +1,11 @@
-import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Command, END } from "@langchain/langgraph";
-import { LeetCodeState } from "./state";
+import { StudyStateType } from "./state";
 
-// Initialize Gemini LLM
-const llm = new ChatGoogleGenerativeAI({
-  model: "gemini-2.5-flash",
-  apiKey: process.env.GOOGLE_API_KEY,
-  temperature: 0.3,
-});
-
-const runDialogueManager = async (state: LeetCodeState) => {
+const runDialogueManager = async (state: StudyStateType) => {
   console.log("DialogueManager: Managing conversation flow...");
 
   // Check if session is complete
-  if (state.studyMode.isSolutionComplete) {
+  if (state.isSolutionComplete) {
     console.log("DialogueManager: Session complete, congratulating user");
 
     const congratsMessage = {
@@ -27,15 +18,9 @@ const runDialogueManager = async (state: LeetCodeState) => {
     return new Command({
       goto: END,
       update: {
-        studyMode: {
-          ...state.studyMode,
-          conversationHistory: [
-            ...state.studyMode.conversationHistory,
-            congratsMessage,
-          ],
-        },
-        messages: [...state.messages, "Session completed successfully!"],
-        flow: [...state.flow, "dialogueManager"],
+        conversationHistory: [congratsMessage],
+        messages: ["Session completed successfully!"],
+        flow: ["dialogueManager"],
       },
     });
   }
@@ -49,7 +34,7 @@ const runDialogueManager = async (state: LeetCodeState) => {
   );
 
   // Check if we have too many conversation turns without progress
-  const conversationLength = state.studyMode.conversationHistory.length;
+  const conversationLength = state.conversationHistory.length;
   if (conversationLength > 20) {
     console.log("DialogueManager: Long conversation, offering to wrap up");
 
@@ -63,16 +48,10 @@ const runDialogueManager = async (state: LeetCodeState) => {
     return new Command({
       goto: END,
       update: {
-        studyMode: {
-          ...state.studyMode,
-          conversationHistory: [
-            ...state.studyMode.conversationHistory,
-            wrapUpMessage,
-          ],
-          awaitingUserInput: true,
-        },
-        messages: [...state.messages, "Offered to wrap up long conversation"],
-        flow: [...state.flow, "dialogueManager"],
+        conversationHistory: [wrapUpMessage],
+        awaitingUserInput: true,
+        messages: ["Offered to wrap up long conversation"],
+        flow: ["dialogueManager"],
       },
     });
   }
@@ -82,15 +61,9 @@ const runDialogueManager = async (state: LeetCodeState) => {
   return new Command({
     goto: END,
     update: {
-      studyMode: {
-        ...state.studyMode,
-        awaitingUserInput: true,
-      },
-      messages: [
-        ...state.messages,
-        "Ready for user input (code, questions, or discussion)",
-      ],
-      flow: [...state.flow, "dialogueManager"],
+      awaitingUserInput: true,
+      messages: ["Ready for user input (code, questions, or discussion)"],
+      flow: ["dialogueManager"],
     },
   });
 };

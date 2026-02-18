@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
-import { LeetCodeState } from "./state";
+import { StudyStateType, PowerStateType } from "./state";
 
 // Initialize Gemini LLM
 const llm = new ChatGoogleGenerativeAI({
@@ -10,7 +10,7 @@ const llm = new ChatGoogleGenerativeAI({
   temperature: 0.1,
 });
 
-const runProblemAnalyzer = async (state: LeetCodeState) => {
+const runProblemAnalyzer = async (state: StudyStateType | PowerStateType) => {
   console.log("ProblemAnalyzer: Analyzing problem...");
 
   const prompt = `Analyze this LeetCode problem and provide:
@@ -45,7 +45,7 @@ Concepts: [comma-separated list]`;
 
     console.log(`ProblemAnalyzer: ${difficulty} - ${category}`);
 
-    // Route based on mode
+    // Route based on mode - each graph handles its own routing
     const nextNode = state.mode === "study" ? "chatTutor" : "strategist";
 
     return new Command({
@@ -53,11 +53,8 @@ Concepts: [comma-separated list]`;
       update: {
         difficulty,
         problemCategory: category,
-        messages: [
-          ...state.messages,
-          `Problem analyzed: ${difficulty} difficulty, ${category}`,
-        ],
-        flow: [...state.flow, "problemAnalyzer"],
+        messages: [`Problem analyzed: ${difficulty} difficulty, ${category}`],
+        flow: ["problemAnalyzer"],
       },
     });
   } catch (error) {
@@ -69,8 +66,8 @@ Concepts: [comma-separated list]`;
     return new Command({
       goto: nextNode,
       update: {
-        messages: [...state.messages, "Problem analyzed (with defaults)"],
-        flow: [...state.flow, "problemAnalyzer"],
+        messages: ["Problem analyzed (with defaults)"],
+        flow: ["problemAnalyzer"],
       },
     });
   }

@@ -27,8 +27,25 @@ export interface ConversationEntry {
   timestamp: number;
 }
 
-// Study Mode specific fields (Chat-based tutoring)
-export interface StudyModeState {
+// Common state interface (shared between both modes)
+export interface CommonState {
+  mode: Mode;
+  problemName: string;
+  problemStatement: string;
+  examples: Example[];
+  constraints: string[];
+  problemCategory: string;
+  difficulty: string;
+  language: string;
+  iterationCount: number;
+  errorMessages: string[];
+  messages: string[];
+  flow: string[];
+}
+
+// Study Mode State (Chat-based tutoring)
+export interface StudyState extends CommonState {
+  mode: "study";
   conversationHistory: ConversationEntry[];
   userCodeAttempts: string[];
   userUnderstandingLevel: "beginner" | "intermediate" | "advanced";
@@ -38,8 +55,9 @@ export interface StudyModeState {
   awaitingUserInput: boolean;
 }
 
-// Power Mode specific fields
-export interface PowerModeState {
+// Power Mode State (Autonomous code generation)
+export interface PowerState extends CommonState {
+  mode: "power";
   strategies: Strategy[];
   selectedStrategy: Strategy | null;
   userCode: string;
@@ -55,22 +73,19 @@ export interface PowerModeState {
   };
 }
 
-// Reducer that replaces the value
-const replaceReducer = <T>() => ({
-  value: (x: T, y: T) => y,
-  default: () => null as unknown as T,
-});
-
 // Array reducer that appends
 const appendReducer = <T>() => ({
   value: (x: T[], y: T[]) => [...x, ...y],
   default: () => [],
 });
 
-// Main state schema using Annotation
-export const LeetCodeStateSchema = Annotation.Root({
-  // Mode selection
-  mode: Annotation<Mode>(),
+// Study Mode State Schema
+export const StudyStateSchema = Annotation.Root({
+  // Mode
+  mode: Annotation<"study">({
+    value: (x, y) => y,
+    default: () => "study" as const,
+  }),
 
   // Common fields
   problemName: Annotation<string>(),
@@ -81,61 +96,83 @@ export const LeetCodeStateSchema = Annotation.Root({
   difficulty: Annotation<string>(),
   language: Annotation<string>(),
 
-  // Study Mode state
-  studyMode: Annotation<StudyModeState>({
-    value: (x, y) => ({ ...x, ...y }),
-    default: () => ({
-      conversationHistory: [],
-      userCodeAttempts: [],
-      userUnderstandingLevel: "beginner",
-      topicsCovered: [],
-      userQuestions: [],
-      isSolutionComplete: false,
-      awaitingUserInput: false,
-    }),
-  }),
+  // Study-specific fields
+  conversationHistory: Annotation<ConversationEntry[]>(
+    appendReducer<ConversationEntry>(),
+  ),
+  userCodeAttempts: Annotation<string[]>(appendReducer<string>()),
+  userUnderstandingLevel: Annotation<
+    "beginner" | "intermediate" | "advanced"
+  >(),
+  topicsCovered: Annotation<string[]>(appendReducer<string>()),
+  userQuestions: Annotation<string[]>(appendReducer<string>()),
+  isSolutionComplete: Annotation<boolean>(),
+  awaitingUserInput: Annotation<boolean>(),
 
-  // Power Mode state
-  powerMode: Annotation<PowerModeState>({
-    value: (x, y) => ({ ...x, ...y }),
-    default: () => ({
-      strategies: [],
-      selectedStrategy: null,
-      userCode: "",
-      finalCode: "",
-      testResults: {
-        passed: false,
-        feedback: "",
-      },
-      fullExplanation: "",
-      complexityAnalysis: {
-        time: "",
-        space: "",
-      },
-    }),
-  }),
-
-  // Common
+  // Common metadata
   iterationCount: Annotation<number>({
     value: (x, y) => y,
     default: () => 0,
   }),
   errorMessages: Annotation<string[]>(appendReducer<string>()),
-
-  // Messages for streaming
   messages: Annotation<string[]>(appendReducer<string>()),
   flow: Annotation<string[]>(appendReducer<string>()),
 });
 
-// Type for the state
-export type LeetCodeState = typeof LeetCodeStateSchema.State;
+// Power Mode State Schema
+export const PowerStateSchema = Annotation.Root({
+  // Mode
+  mode: Annotation<"power">({
+    value: (x, y) => y,
+    default: () => "power" as const,
+  }),
 
-// Initial state creator
-export const createInitialState = (
-  mode: Mode = "study",
+  // Common fields
+  problemName: Annotation<string>(),
+  problemStatement: Annotation<string>(),
+  examples: Annotation<Example[]>(appendReducer<Example>()),
+  constraints: Annotation<string[]>(appendReducer<string>()),
+  problemCategory: Annotation<string>(),
+  difficulty: Annotation<string>(),
+  language: Annotation<string>(),
+
+  // Power-specific fields
+  strategies: Annotation<Strategy[]>(appendReducer<Strategy>()),
+  selectedStrategy: Annotation<Strategy | null>({
+    value: (x, y) => y,
+    default: () => null,
+  }),
+  userCode: Annotation<string>(),
+  finalCode: Annotation<string>(),
+  testResults: Annotation<{ passed: boolean; feedback: string }>({
+    value: (x, y) => ({ ...x, ...y }),
+    default: () => ({ passed: false, feedback: "" }),
+  }),
+  fullExplanation: Annotation<string>(),
+  complexityAnalysis: Annotation<{ time: string; space: string }>({
+    value: (x, y) => ({ ...x, ...y }),
+    default: () => ({ time: "", space: "" }),
+  }),
+
+  // Common metadata
+  iterationCount: Annotation<number>({
+    value: (x, y) => y,
+    default: () => 0,
+  }),
+  errorMessages: Annotation<string[]>(appendReducer<string>()),
+  messages: Annotation<string[]>(appendReducer<string>()),
+  flow: Annotation<string[]>(appendReducer<string>()),
+});
+
+// Type exports for the schemas
+export type StudyStateType = typeof StudyStateSchema.State;
+export type PowerStateType = typeof PowerStateSchema.State;
+
+// Initial state creators
+export const createStudyInitialState = (
   problemName: string = "",
-): LeetCodeState => ({
-  mode,
+): StudyStateType => ({
+  mode: "study",
   problemName,
   problemStatement: "",
   examples: [],
@@ -143,32 +180,44 @@ export const createInitialState = (
   problemCategory: "",
   difficulty: "",
   language: "python",
-  studyMode: {
-    conversationHistory: [],
-    userCodeAttempts: [],
-    userUnderstandingLevel: "beginner",
-    topicsCovered: [],
-    userQuestions: [],
-    isSolutionComplete: false,
-    awaitingUserInput: false,
-  },
-  powerMode: {
-    strategies: [],
-    selectedStrategy: null,
-    userCode: "",
-    finalCode: "",
-    testResults: {
-      passed: false,
-      feedback: "",
-    },
-    fullExplanation: "",
-    complexityAnalysis: {
-      time: "",
-      space: "",
-    },
-  },
+  conversationHistory: [],
+  userCodeAttempts: [],
+  userUnderstandingLevel: "beginner",
+  topicsCovered: [],
+  userQuestions: [],
+  isSolutionComplete: false,
+  awaitingUserInput: false,
   iterationCount: 0,
   errorMessages: [],
   messages: [],
   flow: [],
 });
+
+export const createPowerInitialState = (
+  problemName: string = "",
+): PowerStateType => ({
+  mode: "power",
+  problemName,
+  problemStatement: "",
+  examples: [],
+  constraints: [],
+  problemCategory: "",
+  difficulty: "",
+  language: "python",
+  strategies: [],
+  selectedStrategy: null,
+  userCode: "",
+  finalCode: "",
+  testResults: { passed: false, feedback: "" },
+  fullExplanation: "",
+  complexityAnalysis: { time: "", space: "" },
+  iterationCount: 0,
+  errorMessages: [],
+  messages: [],
+  flow: [],
+});
+
+// Legacy exports for backward compatibility (will be removed)
+export const LeetCodeStateSchema = StudyStateSchema;
+export type LeetCodeState = StudyStateType;
+export const createInitialState = createStudyInitialState;

@@ -1,7 +1,7 @@
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { Command } from "@langchain/langgraph";
-import { LeetCodeState } from "./state";
+import { PowerStateType } from "./state";
 
 // Initialize Gemini LLM
 const llm = new ChatGoogleGenerativeAI({
@@ -10,10 +10,10 @@ const llm = new ChatGoogleGenerativeAI({
   temperature: 0.1,
 });
 
-const runCodeGenerator = async (state: LeetCodeState) => {
+const runCodeGenerator = async (state: PowerStateType) => {
   console.log("CodeGenerator: Generating solution code...");
   
-  const strategy = state.powerMode.selectedStrategy;
+  const strategy = state.selectedStrategy;
   
   const prompt = `Generate a complete, production-quality solution in Python for this LeetCode problem.
 
@@ -60,12 +60,9 @@ Generate the code now:`;
     return new Command({
       goto: "testValidator",
       update: {
-        powerMode: {
-          ...state.powerMode,
-          finalCode: cleanCode,
-        },
-        messages: [...state.messages, "Generated solution code"],
-        flow: [...state.flow, "codeGenerator"],
+        finalCode: cleanCode,
+        messages: ["Generated solution code"],
+        flow: ["codeGenerator"],
       },
     });
   } catch (error) {
@@ -73,8 +70,8 @@ Generate the code now:`;
     return new Command({
       goto: "testValidator",
       update: {
-        messages: [...state.messages, "Error generating code"],
-        flow: [...state.flow, "codeGenerator"],
+        messages: ["Error generating code"],
+        flow: ["codeGenerator"],
       },
     });
   }
