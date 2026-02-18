@@ -5,7 +5,6 @@ import { useCodeStore } from "@/store/codeStore";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { ModeSelector } from "./ModeSelector";
-import { ProblemInput } from "./ProblemInput";
 import { Button } from "./ui/button";
 
 const RightPanel: React.FC = () => {
@@ -397,8 +396,6 @@ const RightPanel: React.FC = () => {
 
         {mode && (
           <>
-            <ProblemInput />
-
             {/* Start Button */}
             {problemName && (
               <Button
