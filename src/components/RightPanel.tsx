@@ -13,6 +13,7 @@ const RightPanel: React.FC = () => {
 
   const {
     code,
+    language,
     mode,
     problemName,
     isLoading,
@@ -68,6 +69,7 @@ const RightPanel: React.FC = () => {
           mode,
           problemName,
           code,
+          language,
           question: question || undefined,
         }),
       });
@@ -145,6 +147,7 @@ const RightPanel: React.FC = () => {
     mode,
     problemName,
     code,
+    language,
     question,
     addFlowStep,
     appendStreamingContent,

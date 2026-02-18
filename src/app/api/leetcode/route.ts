@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { mode, problemName, code, question } = await req.json();
+    const { mode, problemName, code, language, question } = await req.json();
 
     if (!mode || !problemName) {
       return new Response(
@@ -25,9 +25,18 @@ export async function POST(req: NextRequest) {
     // Create initial state
     const initialState = createInitialState(mode, problemName);
 
-    // Add user code and question if provided
+    // Set language if provided (defaults to python in createInitialState)
+    if (language) {
+      initialState.language = language;
+    }
+
+    // Add user code and question based on mode
     if (code) {
-      initialState.studyMode.userCodeAttempts = [code];
+      if (mode === "study") {
+        initialState.studyMode.userCodeAttempts = [code];
+      } else if (mode === "power") {
+        initialState.powerMode.userCode = code;
+      }
     }
     if (question) {
       initialState.studyMode.userQuestions = [question];

@@ -42,6 +42,7 @@ export interface StudyModeState {
 export interface PowerModeState {
   strategies: Strategy[];
   selectedStrategy: Strategy | null;
+  userCode: string;
   finalCode: string;
   testResults: {
     passed: boolean;
@@ -78,6 +79,7 @@ export const LeetCodeStateSchema = Annotation.Root({
   constraints: Annotation<string[]>(appendReducer<string>()),
   problemCategory: Annotation<string>(),
   difficulty: Annotation<string>(),
+  language: Annotation<string>(),
 
   // Study Mode state
   studyMode: Annotation<StudyModeState>({
@@ -99,6 +101,7 @@ export const LeetCodeStateSchema = Annotation.Root({
     default: () => ({
       strategies: [],
       selectedStrategy: null,
+      userCode: "",
       finalCode: "",
       testResults: {
         passed: false,
@@ -139,6 +142,7 @@ export const createInitialState = (
   constraints: [],
   problemCategory: "",
   difficulty: "",
+  language: "python",
   studyMode: {
     conversationHistory: [],
     userCodeAttempts: [],
@@ -151,6 +155,7 @@ export const createInitialState = (
   powerMode: {
     strategies: [],
     selectedStrategy: null,
+    userCode: "",
     finalCode: "",
     testResults: {
       passed: false,
