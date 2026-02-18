@@ -12,7 +12,7 @@ const llm = new ChatGoogleGenerativeAI({
 
 const runExplainer = async (state: PowerStateType) => {
   console.log("Explainer: Generating detailed explanation...");
-  
+
   const prompt = `Provide a comprehensive explanation for this LeetCode problem solution.
 
 Problem: ${state.problemName}
@@ -20,21 +20,29 @@ Statement: ${state.problemStatement}
 Difficulty: ${state.difficulty}
 Category: ${state.problemCategory}
 
-${state.selectedStrategy ? `
+${
+  state.selectedStrategy
+    ? `
 Approach: ${state.selectedStrategy.name}
 Time Complexity: ${state.selectedStrategy.timeComplexity}
 Space Complexity: ${state.selectedStrategy.spaceComplexity}
-` : ""}
+`
+    : ""
+}
 
 Solution Code:
 \`\`\`python
 ${state.finalCode}
 \`\`\`
 
-${state.testResults.feedback ? `
+${
+  state.testResults.feedback
+    ? `
 Code Review:
 ${state.testResults.feedback}
-` : ""}
+`
+    : ""
+}
 
 Please provide:
 1. Detailed explanation of the algorithm and approach
@@ -50,17 +58,19 @@ Make it educational and clear.`;
       new SystemMessage("You are an expert educator explaining algorithms."),
       new HumanMessage(prompt),
     ]);
-    
+
     const explanation = response.content as string;
-    
+
     // Extract complexity analysis
-    const timeMatch = explanation.match(/Time Complexity:\s*O\([^)]+\)/i) ||
-                     explanation.match(/Time:\s*O\([^)]+\)/i);
-    const spaceMatch = explanation.match(/Space Complexity:\s*O\([^)]+\)/i) ||
-                      explanation.match(/Space:\s*O\([^)]+\)/i);
-    
+    const timeMatch =
+      explanation.match(/Time Complexity:\s*O\([^)]+\)/i) ||
+      explanation.match(/Time:\s*O\([^)]+\)/i);
+    const spaceMatch =
+      explanation.match(/Space Complexity:\s*O\([^)]+\)/i) ||
+      explanation.match(/Space:\s*O\([^)]+\)/i);
+
     console.log("Explainer: Generated comprehensive explanation");
-    
+
     return new Command({
       goto: END,
       update: {

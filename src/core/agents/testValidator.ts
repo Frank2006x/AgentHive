@@ -12,7 +12,7 @@ const llm = new ChatGoogleGenerativeAI({
 
 const runTestValidator = async (state: PowerStateType) => {
   console.log("TestValidator: Reviewing solution code...");
-  
+
   const prompt = `Review this solution code for the LeetCode problem "${state.problemName}".
 
 Problem Statement:
@@ -22,9 +22,13 @@ Constraints:
 ${state.constraints.join("\n")}
 
 Examples:
-${state.examples.map((ex, i) => `Example ${i + 1}:
+${state.examples
+  .map(
+    (ex, i) => `Example ${i + 1}:
 Input: ${ex.input}
-Output: ${ex.output}`).join("\n\n")}
+Output: ${ex.output}`,
+  )
+  .join("\n\n")}
 
 Solution Code:
 \`\`\`python
@@ -48,16 +52,19 @@ FEEDBACK: [Detailed feedback]`;
       new SystemMessage("You are a code reviewer and test validator."),
       new HumanMessage(prompt),
     ]);
-    
+
     const review = response.content as string;
-    
+
     // Parse verdict
-    const passed = review.toLowerCase().includes("verdict: pass") ||
-                  (review.toLowerCase().includes("correctly") && 
-                   !review.toLowerCase().includes("incorrectly"));
-    
-    console.log(`TestValidator: Code review ${passed ? "PASSED" : "NEEDS_IMPROVEMENT"}`);
-    
+    const passed =
+      review.toLowerCase().includes("verdict: pass") ||
+      (review.toLowerCase().includes("correctly") &&
+        !review.toLowerCase().includes("incorrectly"));
+
+    console.log(
+      `TestValidator: Code review ${passed ? "PASSED" : "NEEDS_IMPROVEMENT"}`,
+    );
+
     return new Command({
       goto: "explainer",
       update: {

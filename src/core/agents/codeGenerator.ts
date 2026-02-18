@@ -12,24 +12,32 @@ const llm = new ChatGoogleGenerativeAI({
 
 const runCodeGenerator = async (state: PowerStateType) => {
   console.log("CodeGenerator: Generating solution code...");
-  
+
   const strategy = state.selectedStrategy;
-  
+
   const prompt = `Generate a complete, production-quality solution in Python for this LeetCode problem.
 
 Problem: ${state.problemName}
 Statement: ${state.problemStatement}
 Constraints: ${state.constraints.join(", ")}
 Examples:
-${state.examples.map((ex, i) => `Example ${i + 1}:
+${state.examples
+  .map(
+    (ex, i) => `Example ${i + 1}:
 Input: ${ex.input}
 Output: ${ex.output}
-Explanation: ${ex.explanation || "N/A"}`).join("\n\n")}
+Explanation: ${ex.explanation || "N/A"}`,
+  )
+  .join("\n\n")}
 
-${strategy ? `Approach: ${strategy.name}
+${
+  strategy
+    ? `Approach: ${strategy.name}
 Description: ${strategy.description}
 Time Complexity: ${strategy.timeComplexity}
-Space Complexity: ${strategy.spaceComplexity}` : ""}
+Space Complexity: ${strategy.spaceComplexity}`
+    : ""
+}
 
 Requirements:
 1. Complete Python function with proper signature
@@ -46,17 +54,16 @@ Generate the code now:`;
       new SystemMessage("You are an expert competitive programmer."),
       new HumanMessage(prompt),
     ]);
-    
+
     const code = response.content as string;
-    
+
     // Extract code from markdown if present
-    const codeMatch = code.match(/```python\s*([\s\S]*?)```/) || 
-                     code.match(/```\s*([\s\S]*?)```/) ||
-                     [null, code];
+    const codeMatch = code.match(/```python\s*([\s\S]*?)```/) ||
+      code.match(/```\s*([\s\S]*?)```/) || [null, code];
     const cleanCode = codeMatch[1]?.trim() || code;
-    
+
     console.log("CodeGenerator: Generated solution code");
-    
+
     return new Command({
       goto: "testValidator",
       update: {

@@ -97,9 +97,8 @@ export const StudyStateSchema = Annotation.Root({
   language: Annotation<string>(),
 
   // Study-specific fields
-  conversationHistory: Annotation<ConversationEntry[]>(
-    appendReducer<ConversationEntry>(),
-  ),
+  conversationHistory:
+    Annotation<ConversationEntry[]>(appendReducer<ConversationEntry>()),
   userCodeAttempts: Annotation<string[]>(appendReducer<string>()),
   userUnderstandingLevel: Annotation<
     "beginner" | "intermediate" | "advanced"

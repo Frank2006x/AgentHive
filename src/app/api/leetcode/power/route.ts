@@ -23,87 +23,51 @@ export async function POST(req: NextRequest) {
       initialState.language = language;
     }
 
-    // Create a stream
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          // Send initial event
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "start",
-                mode: "power",
-                problemName,
-              })}\n\n`,
-            ),
-          );
+    // Execute the graph and wait for completion
+    console.log("⚡ Starting power mode for:", problemName);
 
-          // Stream from the power graph
-          for await (const state of await powerGraph.stream(initialState, {
-            streamMode: "values",
-          })) {
-            // Extract relevant data from the state
-            const event = {
-              type: "update",
-              step: state.flow[state.flow.length - 1],
-              flow: state.flow,
-              messages: state.messages,
-              data: {
-                // Common fields
-                problemStatement: state.problemStatement,
-                difficulty: state.difficulty,
-                category: state.problemCategory,
-                examples: state.examples,
-                constraints: state.constraints,
+    let finalState = initialState; // Initialize with initial state
+    for await (const state of await powerGraph.stream(initialState, {
+      streamMode: "values",
+    })) {
+      finalState = state;
+      console.log("📊 Step completed:", state.flow[state.flow.length - 1]);
+    }
 
-                // Power mode specific fields
-                strategies: state.strategies,
-                selectedStrategy: state.selectedStrategy,
-                finalCode: state.finalCode,
-                complexityAnalysis: state.complexityAnalysis,
-                fullExplanation: state.fullExplanation,
-                testResults: state.testResults,
-              },
-            };
+    console.log("✅ Power mode completed");
 
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(event)}\n\n`),
-            );
-          }
+    // Return the final state as JSON
+    return new Response(
+      JSON.stringify({
+        success: true,
+        mode: "power",
+        data: {
+          // Common fields
+          problemName: finalState.problemName,
+          problemStatement: finalState.problemStatement,
+          difficulty: finalState.difficulty,
+          category: finalState.problemCategory,
+          examples: finalState.examples,
+          constraints: finalState.constraints,
 
-          // Send completion event
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "complete",
-                message: "Power mode solution generated successfully",
-              })}\n\n`,
-            ),
-          );
-          controller.close();
-        } catch (error) {
-          console.error("Power mode streaming error:", error);
-          controller.enqueue(
-            encoder.encode(
-              `data: ${JSON.stringify({
-                type: "error",
-                error: error instanceof Error ? error.message : "Unknown error",
-              })}\n\n`,
-            ),
-          );
-          controller.close();
-        }
+          // Power mode specific fields
+          strategies: finalState.strategies,
+          selectedStrategy: finalState.selectedStrategy,
+          finalCode: finalState.finalCode,
+          complexityAnalysis: finalState.complexityAnalysis,
+          fullExplanation: finalState.fullExplanation,
+          testResults: finalState.testResults,
+
+          // Metadata
+          flow: finalState.flow,
+          messages: finalState.messages,
+        },
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
       },
-    });
-
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        Connection: "keep-alive",
-      },
-    });
+    );
   } catch (error) {
     console.error("Power mode API error:", error);
     return new Response(

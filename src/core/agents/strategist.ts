@@ -12,7 +12,7 @@ const llm = new ChatGoogleGenerativeAI({
 
 const runStrategist = async (state: PowerStateType) => {
   console.log("Strategist: Generating solution strategies...");
-  
+
   const prompt = `You are a senior software engineer designing solutions for this LeetCode problem.
 
 Problem: ${state.problemName}
@@ -48,13 +48,15 @@ Recommend the best strategy based on the constraints and typical LeetCode expect
       new SystemMessage("You are an expert algorithm designer."),
       new HumanMessage(prompt),
     ]);
-    
+
     const content = response.content as string;
-    
+
     // Parse strategies from the response
     const strategies: Strategy[] = [];
-    const strategyBlocks = content.split(/STRATEGY \d+:/gi).filter(s => s.trim());
-    
+    const strategyBlocks = content
+      .split(/STRATEGY \d+:/gi)
+      .filter((s) => s.trim());
+
     strategyBlocks.forEach((block, index) => {
       const nameMatch = block.match(/^\s*([^\n]+)/);
       const descMatch = block.match(/Description:\s*([^\n]+)/i);
@@ -62,24 +64,32 @@ Recommend the best strategy based on the constraints and typical LeetCode expect
       const spaceMatch = block.match(/Space:\s*([^\n]+)/i);
       const prosMatch = block.match(/Pros:\s*([^\n]+)/i);
       const consMatch = block.match(/Cons:\s*([^\n]+)/i);
-      
+
       if (nameMatch) {
         strategies.push({
           name: nameMatch[1].trim(),
           description: descMatch?.[1]?.trim() || "",
           timeComplexity: timeMatch?.[1]?.trim() || "Unknown",
           spaceComplexity: spaceMatch?.[1]?.trim() || "Unknown",
-          pros: prosMatch?.[1]?.split(",").map(s => s.trim()).filter(Boolean) || [],
-          cons: consMatch?.[1]?.split(",").map(s => s.trim()).filter(Boolean) || [],
+          pros:
+            prosMatch?.[1]
+              ?.split(",")
+              .map((s) => s.trim())
+              .filter(Boolean) || [],
+          cons:
+            consMatch?.[1]
+              ?.split(",")
+              .map((s) => s.trim())
+              .filter(Boolean) || [],
         });
       }
     });
-    
+
     // Select the first (best) strategy
     const selectedStrategy = strategies[0] || null;
-    
+
     console.log(`Strategist: Generated ${strategies.length} strategies`);
-    
+
     return new Command({
       goto: "codeGenerator",
       update: {

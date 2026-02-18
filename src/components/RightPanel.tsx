@@ -17,8 +17,6 @@ const RightPanel: React.FC = () => {
     mode,
     problemName,
     isLoading,
-    isStreaming,
-    streamingContent,
     error,
     flow,
     // Study mode state (Chat-based)
@@ -33,7 +31,6 @@ const RightPanel: React.FC = () => {
     // Actions
     appendStreamingContent,
     setLoading,
-    setStreaming,
     clearStreamingContent,
     setError,
     addFlowStep,
@@ -47,7 +44,7 @@ const RightPanel: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [conversationHistory]);
 
-  // Handle streaming response from API
+  // Handle normal request/response from API
   const handleStartSession = useCallback(async () => {
     if (!mode || !problemName) {
       setError("Please select a mode and enter a problem name");
@@ -55,13 +52,15 @@ const RightPanel: React.FC = () => {
     }
 
     setLoading(true);
-    setStreaming(true);
     clearStreamingContent();
     setError(null);
 
     try {
       // Select the correct API endpoint based on mode
-      const endpoint = mode === "study" ? "/api/leetcode/study" : "/api/leetcode/power";
+      const endpoint =
+        mode === "study" ? "/api/leetcode/study" : "/api/leetcode/power";
+
+      console.log(`📤 Sending request to ${endpoint}`);
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -80,70 +79,45 @@ const RightPanel: React.FC = () => {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("No reader available");
+      const result = await response.json();
+      console.log("📥 Received response:", result);
+
+      if (!result.success) {
+        throw new Error(result.error || "Request failed");
       }
 
-      const decoder = new TextDecoder();
-      let buffer = "";
+      // Update state based on mode
+      if (mode === "study" && result.data) {
+        // Display the latest assistant message
+        const conversationHistory = result.data.conversationHistory || [];
+        const lastMessage = conversationHistory[conversationHistory.length - 1];
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        if (lastMessage && lastMessage.role === "assistant") {
+          appendStreamingContent(lastMessage.message);
+        }
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        // Update flow steps
+        if (result.data.flow) {
+          result.data.flow.forEach((step: string) => addFlowStep(step));
+        }
+      } else if (mode === "power" && result.data) {
+        // Display the full explanation
+        if (result.data.fullExplanation) {
+          appendStreamingContent(result.data.fullExplanation);
+        }
 
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const event = JSON.parse(line.slice(6));
-
-              switch (event.type) {
-                case "start":
-                  console.log("Session started:", event);
-                  break;
-
-                case "update":
-                  if (event.step) {
-                    addFlowStep(event.step);
-                  }
-                  // Handle streaming content based on mode
-                  if (mode === "study" && event.data?.conversationHistory) {
-                    const lastMessage =
-                      event.data.conversationHistory[
-                        event.data.conversationHistory.length - 1
-                      ];
-                    if (lastMessage && lastMessage.role === "assistant") {
-                      appendStreamingContent(lastMessage.message);
-                    }
-                  } else if (mode === "power" && event.data?.fullExplanation) {
-                    appendStreamingContent(event.data.fullExplanation);
-                  }
-                  break;
-
-                case "complete":
-                  console.log("Session completed:", event);
-                  break;
-
-                case "error":
-                  setError(event.error);
-                  break;
-              }
-            } catch (err) {
-              console.error("Failed to parse event:", line, err);
-            }
-          }
+        // Update flow steps
+        if (result.data.flow) {
+          result.data.flow.forEach((step: string) => addFlowStep(step));
         }
       }
+
+      console.log("✅ Session completed successfully");
     } catch (err) {
-      console.error("Session error:", err);
+      console.error("❌ Session error:", err);
       setError(err instanceof Error ? err.message : "Failed to start session");
     } finally {
       setLoading(false);
-      setStreaming(false);
     }
   }, [
     mode,
@@ -156,7 +130,6 @@ const RightPanel: React.FC = () => {
     clearStreamingContent,
     setError,
     setLoading,
-    setStreaming,
   ]);
 
   const handleReset = () => {
@@ -405,17 +378,17 @@ const RightPanel: React.FC = () => {
             {problemName && (
               <Button
                 onClick={handleStartSession}
-                disabled={isLoading || isStreaming}
+                disabled={isLoading}
                 className={`w-full ${
                   mode === "study"
                     ? "bg-blue-600 hover:bg-blue-700"
                     : "bg-yellow-600 hover:bg-yellow-700"
                 } text-white`}
               >
-                {isLoading || isStreaming ? (
+                {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                    {isStreaming ? "Processing..." : "Starting..."}
+                    Processing...
                   </>
                 ) : (
                   <>
@@ -453,21 +426,6 @@ const RightPanel: React.FC = () => {
           </>
         )}
       </div>
-
-      {/* Streaming Content Display */}
-      {isStreaming && streamingContent && (
-        <section className="mt-4 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
-          <div className="flex items-center gap-2 mb-2">
-            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
-            <span className="text-sm text-slate-400">Processing...</span>
-          </div>
-          <div className="prose prose-invert max-w-none text-sm">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {streamingContent}
-            </ReactMarkdown>
-          </div>
-        </section>
-      )}
     </div>
   );
 };

@@ -16,12 +16,18 @@ export async function POST(req: NextRequest) {
     return new Response(
       JSON.stringify({
         error: "This endpoint is deprecated",
-        message: mode === "study"
-          ? "Please use /api/leetcode/study instead"
-          : mode === "power"
-          ? "Please use /api/leetcode/power instead"
-          : "Please specify mode: 'study' or 'power' and use the appropriate endpoint",
-        redirectTo: mode === "study" ? "/api/leetcode/study" : mode === "power" ? "/api/leetcode/power" : null,
+        message:
+          mode === "study"
+            ? "Please use /api/leetcode/study instead"
+            : mode === "power"
+              ? "Please use /api/leetcode/power instead"
+              : "Please specify mode: 'study' or 'power' and use the appropriate endpoint",
+        redirectTo:
+          mode === "study"
+            ? "/api/leetcode/study"
+            : mode === "power"
+              ? "/api/leetcode/power"
+              : null,
       }),
       {
         status: 410, // Gone
@@ -32,7 +38,8 @@ export async function POST(req: NextRequest) {
     return new Response(
       JSON.stringify({
         error: "Bad request",
-        message: "This endpoint is deprecated. Use /api/leetcode/study or /api/leetcode/power",
+        message:
+          "This endpoint is deprecated. Use /api/leetcode/study or /api/leetcode/power",
       }),
       {
         status: 400,
@@ -41,4 +48,3 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-

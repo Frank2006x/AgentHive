@@ -27,18 +27,14 @@ const runChatTutor = async (state: StudyStateType) => {
 
   // If user has provided code, analyze it and provide guidance
   if (state.userCodeAttempts.length > 0) {
-    const lastCode =
-      state.userCodeAttempts[
-        state.userCodeAttempts.length - 1
-      ];
+    const lastCode = state.userCodeAttempts[state.userCodeAttempts.length - 1];
 
     return await analyzeUserCode(state, lastCode);
   }
 
   // If user has asked questions, answer them
   if (state.userQuestions.length > 0) {
-    const lastQuestion =
-      state.userQuestions[state.userQuestions.length - 1];
+    const lastQuestion = state.userQuestions[state.userQuestions.length - 1];
 
     return await answerUserQuestion(state, lastQuestion);
   }

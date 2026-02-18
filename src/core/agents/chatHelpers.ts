@@ -71,18 +71,12 @@ export function isUserStuck(state: StudyStateType): boolean {
   const userMessages = recentMessages.filter((msg) => msg.role === "user");
 
   // If user has asked multiple questions recently without code attempts
-  if (
-    userMessages.length >= 3 &&
-    state.userCodeAttempts.length === 0
-  ) {
+  if (userMessages.length >= 3 && state.userCodeAttempts.length === 0) {
     return true;
   }
 
   // If user has made multiple failed attempts
-  if (
-    state.userCodeAttempts.length >= 3 &&
-    !state.isSolutionComplete
-  ) {
+  if (state.userCodeAttempts.length >= 3 && !state.isSolutionComplete) {
     return true;
   }
 
