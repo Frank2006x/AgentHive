@@ -1,3 +1,5 @@
+import { Toaster } from "sonner";
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="h-screen flex flex-col overflow-hidden">
@@ -7,6 +9,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
         </div>
       </nav>
       <div className="flex-1 min-h-0 overflow-hidden">{children}</div>
+      <Toaster position="top-right" richColors theme="dark" />
     </div>
   );
 };

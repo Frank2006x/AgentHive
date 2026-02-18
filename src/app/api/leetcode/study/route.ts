@@ -67,8 +67,12 @@ export async function POST(req: NextRequest) {
         ...state,
         ...(tutorResult.update || {}),
       };
-      
-      if (tutorResult.update && "flow" in tutorResult.update && Array.isArray(tutorResult.update.flow)) {
+
+      if (
+        tutorResult.update &&
+        "flow" in tutorResult.update &&
+        Array.isArray(tutorResult.update.flow)
+      ) {
         updatedState.flow = [...state.flow, ...tutorResult.update.flow];
       }
 
@@ -78,8 +82,12 @@ export async function POST(req: NextRequest) {
         ...updatedState,
         ...(dialogueResult.update || {}),
       };
-      
-      if (dialogueResult.update && "flow" in dialogueResult.update && Array.isArray(dialogueResult.update.flow)) {
+
+      if (
+        dialogueResult.update &&
+        "flow" in dialogueResult.update &&
+        Array.isArray(dialogueResult.update.flow)
+      ) {
         finalState.flow = [...updatedState.flow, ...dialogueResult.update.flow];
       }
 

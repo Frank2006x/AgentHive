@@ -10,7 +10,7 @@ import { rust } from "@codemirror/lang-rust";
 import { java } from "@codemirror/lang-java";
 import { go } from "@codemirror/lang-go";
 import type { Extension } from "@codemirror/state";
-import { Search, Loader2, Code2 } from "lucide-react";
+import { Search, Loader2, Code2, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -52,6 +52,7 @@ const LeftPanel: React.FC = () => {
     setCode,
     setLanguage,
     problemName,
+    problemLocked,
     difficulty,
     category,
     setProblemName,
@@ -127,26 +128,33 @@ const LeftPanel: React.FC = () => {
           <div className="relative flex-1">
             <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <Input
-              value={inputValue}
+              value={problemLocked ? problemName : inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="e.g., two-sum"
               className="pl-10 h-10 bg-slate-800/50 border-slate-700 text-slate-200 placeholder:text-slate-500"
-              disabled={isFetching || isLoading}
+              disabled={problemLocked || isFetching || isLoading}
             />
           </div>
-          <Button
-            onClick={handleFetchProblem}
-            disabled={isFetching || isLoading || !inputValue.trim()}
-            className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-3"
-            size="sm"
-          >
-            {isFetching ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Search className="w-4 h-4" />
-            )}
-          </Button>
+          {problemLocked ? (
+            <div className="h-10 px-3 flex items-center gap-2 bg-slate-800/50 border border-slate-700 rounded-md text-slate-400 text-sm">
+              <Lock className="w-4 h-4" />
+              <span className="hidden sm:inline">Locked</span>
+            </div>
+          ) : (
+            <Button
+              onClick={handleFetchProblem}
+              disabled={isFetching || isLoading || !inputValue.trim()}
+              className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-3"
+              size="sm"
+            >
+              {isFetching ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Search className="w-4 h-4" />
+              )}
+            </Button>
+          )}
         </div>
 
         {/* Divider */}

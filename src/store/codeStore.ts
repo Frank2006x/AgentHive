@@ -28,6 +28,7 @@ interface CodeStore {
   // NEW: Multi-mode state
   mode: Mode;
   problemName: string;
+  problemLocked: boolean;
   problemStatement: string;
   difficulty: string;
   category: string;
@@ -58,6 +59,8 @@ interface CodeStore {
   // Actions
   setMode: (mode: Mode) => void;
   setProblemName: (name: string) => void;
+  lockProblem: () => void;
+  unlockProblem: () => void;
   setProblemData: (data: {
     statement?: string;
     difficulty?: string;
@@ -105,6 +108,7 @@ export const useCodeStore = create<CodeStore>()(
       // Multi-mode state
       mode: null,
       problemName: "",
+      problemLocked: false,
       problemStatement: "",
       difficulty: "",
       category: "",
@@ -135,6 +139,8 @@ export const useCodeStore = create<CodeStore>()(
       // Actions
       setMode: (mode) => set({ mode }),
       setProblemName: (name) => set({ problemName: name }),
+      lockProblem: () => set({ problemLocked: true }),
+      unlockProblem: () => set({ problemLocked: false }),
       setProblemData: (data) =>
         set((state) => ({
           problemStatement: data.statement ?? state.problemStatement,
@@ -184,6 +190,7 @@ export const useCodeStore = create<CodeStore>()(
         set({
           mode: null,
           problemName: "",
+          problemLocked: false,
           problemStatement: "",
           difficulty: "",
           category: "",

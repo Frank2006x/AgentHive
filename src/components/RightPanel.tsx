@@ -4,6 +4,7 @@ import { useRef, useState, useCallback, useEffect } from "react";
 import { useCodeStore } from "@/store/codeStore";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { toast } from "sonner";
 import { ModeSelector } from "./ModeSelector";
 import { Button } from "./ui/button";
 
@@ -46,6 +47,8 @@ const RightPanel: React.FC = () => {
     setProblemData,
     addToConversation,
     completeSolution,
+    lockProblem,
+    unlockProblem,
   } = useCodeStore();
 
   const [question, setQuestion] = useState("");
@@ -82,7 +85,11 @@ const RightPanel: React.FC = () => {
       };
 
       // For follow-up messages in study mode, include existing problem data
-      if (mode === "study" && problemStatement && conversationHistory.length > 0) {
+      if (
+        mode === "study" &&
+        problemStatement &&
+        conversationHistory.length > 0
+      ) {
         console.log("🔄 Including existing problem data for follow-up");
         requestBody.problemStatement = problemStatement;
         requestBody.difficulty = difficulty;
@@ -137,7 +144,7 @@ const RightPanel: React.FC = () => {
               timestamp: Date.now(),
             });
           }
-          
+
           // Add assistant response
           addToConversation(lastMessage);
           appendStreamingContent(lastMessage.message);
@@ -165,7 +172,11 @@ const RightPanel: React.FC = () => {
       }
 
       console.log("✅ Session completed successfully");
-      
+
+      // Lock the problem to prevent changes during session
+      lockProblem();
+      toast.success("Session started successfully!");
+
       // Clear question input after successful send
       setQuestion("");
     } catch (err) {
@@ -188,6 +199,7 @@ const RightPanel: React.FC = () => {
     setProblemData,
     addToConversation,
     completeSolution,
+    lockProblem,
     conversationHistory,
     problemStatement,
     difficulty,
@@ -200,7 +212,9 @@ const RightPanel: React.FC = () => {
 
   const handleReset = () => {
     resetSession();
+    unlockProblem();
     setQuestion("");
+    toast.info("Session reset. Select a new problem to begin.");
   };
 
   // Render study mode content (Chat-based)
