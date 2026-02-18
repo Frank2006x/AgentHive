@@ -22,6 +22,14 @@ const RightPanel: React.FC = () => {
     // Study mode state (Chat-based)
     conversationHistory,
     isSolutionComplete,
+    topicsCovered,
+    userUnderstandingLevel,
+    // Problem data
+    problemStatement,
+    difficulty,
+    category,
+    examples,
+    constraints,
     // Power mode state
     strategies,
     selectedStrategy,
@@ -35,6 +43,9 @@ const RightPanel: React.FC = () => {
     setError,
     addFlowStep,
     resetSession,
+    setProblemData,
+    addToConversation,
+    completeSolution,
   } = useCodeStore();
 
   const [question, setQuestion] = useState("");
@@ -62,17 +73,33 @@ const RightPanel: React.FC = () => {
 
       console.log(`📤 Sending request to ${endpoint}`);
 
+      // Build request body
+      const requestBody: Record<string, unknown> = {
+        problemName,
+        code,
+        language,
+        question: question || undefined,
+      };
+
+      // For follow-up messages in study mode, include existing problem data
+      if (mode === "study" && problemStatement && conversationHistory.length > 0) {
+        console.log("🔄 Including existing problem data for follow-up");
+        requestBody.problemStatement = problemStatement;
+        requestBody.difficulty = difficulty;
+        requestBody.category = category;
+        requestBody.examples = examples;
+        requestBody.constraints = constraints;
+        requestBody.conversationHistory = conversationHistory;
+        requestBody.topicsCovered = topicsCovered;
+        requestBody.userUnderstandingLevel = userUnderstandingLevel;
+      }
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          problemName,
-          code,
-          language,
-          question: question || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!response.ok) {
@@ -88,12 +115,37 @@ const RightPanel: React.FC = () => {
 
       // Update state based on mode
       if (mode === "study" && result.data) {
-        // Display the latest assistant message
-        const conversationHistory = result.data.conversationHistory || [];
-        const lastMessage = conversationHistory[conversationHistory.length - 1];
+        // Store problem data for follow-up messages
+        setProblemData({
+          statement: result.data.problemStatement,
+          difficulty: result.data.difficulty,
+          category: result.data.category,
+          examples: result.data.examples,
+          constraints: result.data.constraints,
+        });
+
+        // Update conversation history
+        const newConversation = result.data.conversationHistory || [];
+        const lastMessage = newConversation[newConversation.length - 1];
 
         if (lastMessage && lastMessage.role === "assistant") {
+          // Add user question to conversation if it exists
+          if (question) {
+            addToConversation({
+              role: "user",
+              message: question,
+              timestamp: Date.now(),
+            });
+          }
+          
+          // Add assistant response
+          addToConversation(lastMessage);
           appendStreamingContent(lastMessage.message);
+        }
+
+        // Update solution status
+        if (result.data.isSolutionComplete) {
+          completeSolution();
         }
 
         // Update flow steps
@@ -113,6 +165,9 @@ const RightPanel: React.FC = () => {
       }
 
       console.log("✅ Session completed successfully");
+      
+      // Clear question input after successful send
+      setQuestion("");
     } catch (err) {
       console.error("❌ Session error:", err);
       setError(err instanceof Error ? err.message : "Failed to start session");
@@ -130,6 +185,17 @@ const RightPanel: React.FC = () => {
     clearStreamingContent,
     setError,
     setLoading,
+    setProblemData,
+    addToConversation,
+    completeSolution,
+    conversationHistory,
+    problemStatement,
+    difficulty,
+    category,
+    examples,
+    constraints,
+    topicsCovered,
+    userUnderstandingLevel,
   ]);
 
   const handleReset = () => {

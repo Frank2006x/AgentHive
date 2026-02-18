@@ -37,6 +37,8 @@ interface CodeStore {
   // NEW: Study mode state (Chat-based)
   conversationHistory: ConversationEntry[];
   isSolutionComplete: boolean;
+  topicsCovered: string[];
+  userUnderstandingLevel: string;
 
   // NEW: Power mode state
   strategies: Strategy[];
@@ -68,6 +70,8 @@ interface CodeStore {
   addToConversation: (entry: ConversationEntry) => void;
   completeSolution: () => void;
   resetStudy: () => void;
+  setTopicsCovered: (topics: string[]) => void;
+  setUserUnderstandingLevel: (level: string) => void;
 
   // Power mode actions
   setStrategies: (strategies: Strategy[]) => void;
@@ -110,6 +114,8 @@ export const useCodeStore = create<CodeStore>()(
       // Study mode state (Chat-based)
       conversationHistory: [],
       isSolutionComplete: false,
+      topicsCovered: [],
+      userUnderstandingLevel: "beginner",
 
       // Power mode state
       strategies: [],
@@ -144,10 +150,15 @@ export const useCodeStore = create<CodeStore>()(
           conversationHistory: [...state.conversationHistory, entry],
         })),
       completeSolution: () => set({ isSolutionComplete: true }),
+      setTopicsCovered: (topics) => set({ topicsCovered: topics }),
+      setUserUnderstandingLevel: (level) =>
+        set({ userUnderstandingLevel: level }),
       resetStudy: () =>
         set({
           conversationHistory: [],
           isSolutionComplete: false,
+          topicsCovered: [],
+          userUnderstandingLevel: "beginner",
         }),
 
       // Power mode actions
@@ -180,6 +191,8 @@ export const useCodeStore = create<CodeStore>()(
           examples: [],
           conversationHistory: [],
           isSolutionComplete: false,
+          topicsCovered: [],
+          userUnderstandingLevel: "beginner",
           strategies: [],
           selectedStrategy: null,
           generatedCode: "",
