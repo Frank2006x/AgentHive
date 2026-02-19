@@ -52,6 +52,7 @@ const RightPanel: React.FC = () => {
   } = useCodeStore();
 
   const [question, setQuestion] = useState("");
+  const hasTriggeredInitial = useRef(false);
 
   // Auto-scroll to bottom when conversation updates
   useEffect(() => {
@@ -210,6 +211,34 @@ const RightPanel: React.FC = () => {
     userUnderstandingLevel,
   ]);
 
+  // Auto-trigger initial guidance when problem is loaded in study mode
+  useEffect(() => {
+    if (
+      mode === "study" &&
+      problemName &&
+      conversationHistory.length === 0 &&
+      !isLoading &&
+      !problemStatement && // Only on initial load, not on follow-ups
+      !hasTriggeredInitial.current
+    ) {
+      console.log("🎓 Auto-triggering initial guidance for:", problemName);
+      hasTriggeredInitial.current = true;
+      handleStartSession();
+    }
+
+    // Reset the trigger flag when problem changes or is reset
+    if (!problemName || conversationHistory.length > 0) {
+      hasTriggeredInitial.current = false;
+    }
+  }, [
+    mode,
+    problemName,
+    conversationHistory.length,
+    isLoading,
+    problemStatement,
+    handleStartSession,
+  ]);
+
   const handleReset = () => {
     resetSession();
     unlockProblem();
@@ -279,7 +308,10 @@ const RightPanel: React.FC = () => {
             />
             <Button
               onClick={handleStartSession}
-              disabled={isLoading || !question.trim()}
+              disabled={
+                isLoading ||
+                (conversationHistory.length > 0 && !question.trim())
+              }
               className="bg-blue-600 hover:bg-blue-700"
             >
               {isLoading ? (
