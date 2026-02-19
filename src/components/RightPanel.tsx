@@ -13,6 +13,7 @@ const RightPanel: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const {
+    code,
     language,
     mode,
     problemName,
@@ -78,6 +79,7 @@ const RightPanel: React.FC = () => {
       // Build request body
       const requestBody: Record<string, unknown> = {
         problemName,
+        code,
         language,
         question: question || undefined,
       };
@@ -186,6 +188,7 @@ const RightPanel: React.FC = () => {
   }, [
     mode,
     problemName,
+    code,
     language,
     question,
     addFlowStep,

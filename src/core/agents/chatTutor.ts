@@ -42,10 +42,14 @@ const answerUserQuestion = async (state: StudyStateType, question: string) => {
     .map((entry) => `${entry.role}: ${entry.message}`)
     .join("\n");
 
+  const codeContext = state.userCode
+    ? `\n\nStudent's Current Code:\n\`\`\`${state.language}\n${state.userCode}\n\`\`\`\n\nConsider their code when providing guidance, but don't give the solution directly.`
+    : "";
+
   const prompt = `You are answering a student's question about this LeetCode problem. Guide them with Socratic questioning.
 
 Problem: ${state.problemName}
-Statement: ${state.problemStatement}
+Statement: ${state.problemStatement}${codeContext}
 
 Student's Question: "${question}"
 
@@ -54,9 +58,10 @@ ${conversationContext}
 
 Provide a helpful response that:
 1. Addresses their question without giving the solution
-2. Asks follow-up questions to make them think deeper
-3. Provides hints about concepts they should consider
-4. Encourages them to explore the problem further
+2. If they have code, comment on what they're trying and guide them
+3. Asks follow-up questions to make them think deeper
+4. Provides hints about concepts they should consider
+5. Encourages them to explore the problem further
 
 Be educational and supportive.`;
 

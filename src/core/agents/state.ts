@@ -47,6 +47,7 @@ export interface CommonState {
 export interface StudyState extends CommonState {
   mode: "study";
   conversationHistory: ConversationEntry[];
+  userCode: string;
   userUnderstandingLevel: "beginner" | "intermediate" | "advanced";
   topicsCovered: string[];
   userQuestions: string[];
@@ -98,6 +99,7 @@ export const StudyStateSchema = Annotation.Root({
   // Study-specific fields
   conversationHistory:
     Annotation<ConversationEntry[]>(appendReducer<ConversationEntry>()),
+  userCode: Annotation<string>(),
   userUnderstandingLevel: Annotation<
     "beginner" | "intermediate" | "advanced"
   >(),
@@ -178,6 +180,7 @@ export const createStudyInitialState = (
   difficulty: "",
   language: "python",
   conversationHistory: [],
+  userCode: "",
   userUnderstandingLevel: "beginner",
   topicsCovered: [],
   userQuestions: [],
