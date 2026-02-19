@@ -2,7 +2,7 @@
 
 import { BookOpen, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCodeStore, Mode } from "@/store/codeStore";
+import { useCodeStore } from "@/store/codeStore";
 
 interface ModeSelectorProps {
   className?: string;

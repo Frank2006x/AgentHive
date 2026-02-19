@@ -8,7 +8,11 @@ import { toast } from "sonner";
 import { ModeSelector } from "./ModeSelector";
 import { Button } from "./ui/button";
 
-const RightPanel: React.FC = () => {
+interface RightPanelProps {
+  hideMode?: boolean;
+}
+
+const RightPanel: React.FC<RightPanelProps> = ({ hideMode = false }) => {
   const panelRef = useRef<HTMLDivElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -468,7 +472,7 @@ const RightPanel: React.FC = () => {
           )}
         </div>
 
-        <ModeSelector />
+        {!hideMode && <ModeSelector />}
 
         {mode && (
           <>

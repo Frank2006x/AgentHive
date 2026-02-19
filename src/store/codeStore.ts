@@ -87,6 +87,7 @@ interface CodeStore {
 
   // Session actions
   resetSession: () => void;
+  clearSession: () => void; // Clear without resetting code
   setLoading: (loading: boolean) => void;
   setStreaming: (streaming: boolean) => void;
   appendStreamingContent: (content: string) => void;
@@ -209,6 +210,29 @@ export const useCodeStore = create<CodeStore>()(
           isLoading: false,
           isStreaming: false,
           streamingContent: "",
+          error: null,
+          flow: [],
+        }),
+      clearSession: () =>
+        set({
+          mode: null,
+          problemName: "",
+          problemLocked: false,
+          problemStatement: "",
+          difficulty: "",
+          category: "",
+          constraints: [],
+          examples: [],
+          conversationHistory: [],
+          isSolutionComplete: false,
+          topicsCovered: [],
+          userUnderstandingLevel: "beginner",
+          strategies: [],
+          selectedStrategy: null,
+          generatedCode: "",
+          complexityAnalysis: { time: "", space: "" },
+          explanation: "",
+          testResults: { passed: false, feedback: "" },
           error: null,
           flow: [],
         }),
