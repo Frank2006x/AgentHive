@@ -73,7 +73,10 @@ export default function WelcomeDialog() {
 
       // Check if problem was actually fetched successfully
       // If problemStatement is missing or empty, the fetch failed
-      if (!result.data?.problemStatement || result.data.problemStatement.trim() === "") {
+      if (
+        !result.data?.problemStatement ||
+        result.data.problemStatement.trim() === ""
+      ) {
         throw new Error("Problem not found or invalid problem name");
       }
 
@@ -89,7 +92,10 @@ export default function WelcomeDialog() {
       setInputValue("");
     } catch (error) {
       console.error("Problem validation error:", error);
-      const errorMessage = error instanceof Error ? error.message : "Problem not found. Check the name and try again.";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Problem not found. Check the name and try again.";
       toast.error(errorMessage);
       // Keep dialog open and clear the input so user can try again
     } finally {

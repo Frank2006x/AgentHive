@@ -13,7 +13,6 @@ const RightPanel: React.FC = () => {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const {
-    code,
     language,
     mode,
     problemName,
@@ -79,7 +78,6 @@ const RightPanel: React.FC = () => {
       // Build request body
       const requestBody: Record<string, unknown> = {
         problemName,
-        code,
         language,
         question: question || undefined,
       };
@@ -188,7 +186,6 @@ const RightPanel: React.FC = () => {
   }, [
     mode,
     problemName,
-    code,
     language,
     question,
     addFlowStep,
@@ -289,20 +286,6 @@ const RightPanel: React.FC = () => {
               )}
             </Button>
           </div>
-
-          {/* Code Submission Button */}
-          <Button
-            onClick={() => {
-              // Submit current code from left panel for review
-              setQuestion("Please review my code");
-              handleStartSession();
-            }}
-            variant="outline"
-            className="w-full"
-            disabled={isLoading || !code.trim()}
-          >
-            Submit Code for Review
-          </Button>
         </div>
 
         {/* Solution Status */}
@@ -454,16 +437,12 @@ const RightPanel: React.FC = () => {
 
         {mode && (
           <>
-            {/* Start Button */}
-            {problemName && (
+            {/* Start Button - Only for Power Mode */}
+            {mode === "power" && problemName && (
               <Button
                 onClick={handleStartSession}
                 disabled={isLoading}
-                className={`w-full ${
-                  mode === "study"
-                    ? "bg-blue-600 hover:bg-blue-700"
-                    : "bg-yellow-600 hover:bg-yellow-700"
-                } text-white`}
+                className="w-full bg-yellow-600 hover:bg-yellow-700 text-white"
               >
                 {isLoading ? (
                   <>
@@ -471,11 +450,7 @@ const RightPanel: React.FC = () => {
                     Processing...
                   </>
                 ) : (
-                  <>
-                    {mode === "study"
-                      ? "Start Study Session"
-                      : "Generate Solution"}
-                  </>
+                  "Generate Solution"
                 )}
               </Button>
             )}

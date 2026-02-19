@@ -5,26 +5,6 @@ import { StudyStateType, ConversationEntry } from "./state";
  */
 
 /**
- * Add user code attempt to the state
- */
-export function addUserCodeAttempt(
-  state: StudyStateType,
-  code: string,
-): Partial<StudyStateType> {
-  const userMessage: ConversationEntry = {
-    role: "user",
-    message: `Here's my code attempt:\n\`\`\`\n${code}\n\`\`\``,
-    timestamp: Date.now(),
-  };
-
-  return {
-    userCodeAttempts: [code],
-    conversationHistory: [userMessage],
-    awaitingUserInput: false,
-  };
-}
-
-/**
  * Add user question to the state
  */
 export function addUserQuestion(
@@ -70,13 +50,8 @@ export function isUserStuck(state: StudyStateType): boolean {
   const recentMessages = state.conversationHistory.slice(-6);
   const userMessages = recentMessages.filter((msg) => msg.role === "user");
 
-  // If user has asked multiple questions recently without code attempts
-  if (userMessages.length >= 3 && state.userCodeAttempts.length === 0) {
-    return true;
-  }
-
-  // If user has made multiple failed attempts
-  if (state.userCodeAttempts.length >= 3 && !state.isSolutionComplete) {
+  // If user has asked multiple questions recently
+  if (userMessages.length >= 3 && !state.isSolutionComplete) {
     return true;
   }
 
@@ -103,12 +78,10 @@ export function getConversationSummary(state: StudyStateType): string {
  */
 export function simulateUserInteraction(
   state: StudyStateType,
-  type: "code" | "question" | "message",
+  type: "question" | "message",
   content: string,
 ): Partial<StudyStateType> {
   switch (type) {
-    case "code":
-      return addUserCodeAttempt(state, content);
     case "question":
       return addUserQuestion(state, content);
     case "message":

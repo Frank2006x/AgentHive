@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
   try {
     const {
       problemName,
-      code,
       language,
       question,
       // Existing problem data for follow-up messages
@@ -50,10 +49,6 @@ export async function POST(req: NextRequest) {
 
       if (language) {
         state.language = language;
-      }
-
-      if (code) {
-        state.userCodeAttempts = [code];
       }
 
       if (question) {
@@ -130,11 +125,6 @@ export async function POST(req: NextRequest) {
     // Set language if provided
     if (language) {
       initialState.language = language;
-    }
-
-    // Add user code attempt if provided
-    if (code) {
-      initialState.userCodeAttempts = [code];
     }
 
     // Add user question if provided
