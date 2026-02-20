@@ -46,7 +46,7 @@ const answerUserQuestion = async (state: StudyStateType, question: string) => {
     ? `\n\nStudent's Current Code:\n\`\`\`${state.language}\n${state.userCode}\n\`\`\`\n\nConsider their code when providing guidance, but don't give the solution directly.`
     : "";
 
-  const prompt = `You are answering a student's question about this LeetCode problem. Guide them with Socratic questioning.
+  const prompt = `You are answering a student's question about this LeetCode problem. Be SHORT and CONCISE.
 
 Problem: ${state.problemName}
 Statement: ${state.problemStatement}${codeContext}
@@ -56,19 +56,18 @@ Student's Question: "${question}"
 Recent Conversation:
 ${conversationContext}
 
-Provide a helpful response that:
-1. Addresses their question without giving the solution
-2. If they have code, comment on what they're trying and guide them
-3. Asks follow-up questions to make them think deeper
-4. Provides hints about concepts they should consider
-5. Encourages them to explore the problem further
+Provide a brief response (2-3 sentences max):
+- Address their question directly
+- If they have code, give ONE specific insight
+- Ask ONE focused question to guide their thinking
+- Use bullet points if listing multiple points
 
-Be educational and supportive.`;
+Keep it SHORT and actionable. No fluff.`;
 
   try {
     const response = await llm.invoke([
       new SystemMessage(
-        "You are a helpful tutor who answers questions through guided discovery. Never give direct solutions.",
+        "You are a concise tutor. Keep responses under 50 words. Be direct and effective. Never give solutions.",
       ),
       new HumanMessage(prompt),
     ]);
@@ -105,26 +104,24 @@ Be educational and supportive.`;
 };
 
 const provideInitialGuidance = async (state: StudyStateType) => {
-  const prompt = `You are starting a tutoring session for this LeetCode problem. Provide initial guidance.
+  const prompt = `You are starting a tutoring session for this LeetCode problem. Be SHORT and welcoming.
 
 Problem: ${state.problemName}
 Statement: ${state.problemStatement}
 Difficulty: ${state.difficulty}
 Category: ${state.problemCategory}
 
-Provide an encouraging introduction that:
-1. Welcomes them to the tutoring session
-2. Suggests they start by understanding the problem
-3. Asks them what their initial thoughts are
-4. Encourages them to think about examples
-5. Invites them to share their approach or ask questions
+Provide a brief welcome (2-3 sentences max):
+- Brief greeting with problem difficulty
+- ONE key question to start their thinking
+- Invite them to share their initial approach
 
-Don't give any hints about the solution yet.`;
+Keep it SHORT. No lengthy explanations.`;
 
   try {
     const response = await llm.invoke([
       new SystemMessage(
-        "You are a welcoming programming tutor starting a new session.",
+        "You are a concise tutor. Keep welcome messages under 40 words. Be friendly but brief.",
       ),
       new HumanMessage(prompt),
     ]);
