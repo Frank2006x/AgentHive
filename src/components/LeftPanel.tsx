@@ -136,25 +136,6 @@ const LeftPanel: React.FC = () => {
               disabled={problemLocked || isFetching || isLoading}
             />
           </div>
-          {problemLocked ? (
-            <div className="h-10 px-3 flex items-center gap-2 bg-slate-800/50 border border-slate-700 rounded-md text-slate-400 text-sm">
-              <Lock className="w-4 h-4" />
-              <span className="hidden sm:inline">Locked</span>
-            </div>
-          ) : (
-            <Button
-              onClick={handleFetchProblem}
-              disabled={isFetching || isLoading || !inputValue.trim()}
-              className="bg-blue-600 hover:bg-blue-700 text-white h-10 px-3"
-              size="sm"
-            >
-              {isFetching ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Search className="w-4 h-4" />
-              )}
-            </Button>
-          )}
         </div>
 
         {/* Divider */}
