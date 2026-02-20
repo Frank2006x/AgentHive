@@ -220,28 +220,30 @@ const RightPanel: React.FC<RightPanelProps> = ({ hideMode = false }) => {
     if (
       mode === "study" &&
       problemName &&
-      conversationHistory.length === 0 &&
+      problemStatement && // Problem data is loaded
+      conversationHistory.length === 0 && // No conversation yet
       !isLoading &&
-      !problemStatement && // Only on initial load, not on follow-ups
       !hasTriggeredInitial.current
     ) {
       console.log("🎓 Auto-triggering initial guidance for:", problemName);
       hasTriggeredInitial.current = true;
       handleStartSession();
     }
-
-    // Reset the trigger flag when problem changes or is reset
-    if (!problemName || conversationHistory.length > 0) {
-      hasTriggeredInitial.current = false;
-    }
   }, [
     mode,
     problemName,
+    problemStatement,
     conversationHistory.length,
     isLoading,
-    problemStatement,
     handleStartSession,
   ]);
+
+  // Reset the trigger flag when problem changes
+  useEffect(() => {
+    if (!problemName) {
+      hasTriggeredInitial.current = false;
+    }
+  }, [problemName]);
 
   const handleReset = () => {
     resetSession();
