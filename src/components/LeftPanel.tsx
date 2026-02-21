@@ -10,8 +10,9 @@ import { rust } from "@codemirror/lang-rust";
 import { java } from "@codemirror/lang-java";
 import { go } from "@codemirror/lang-go";
 import type { Extension } from "@codemirror/state";
-import { Search, Loader2, Code2, Lock } from "lucide-react";
+import { Code2, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CodeComparisonDialog } from "./CodeComparisonDialog";
 import {
   Select,
   SelectContent,
@@ -46,6 +47,7 @@ const LeftPanel: React.FC = () => {
   const [lang, setLang] = useState<LanguageKey>("python");
   const [inputValue, setInputValue] = useState("");
   const [isFetching, setIsFetching] = useState(false);
+  const [showPowerDialog, setShowPowerDialog] = useState(false);
 
   const {
     code,
@@ -205,6 +207,24 @@ const LeftPanel: React.FC = () => {
           theme={oneDark}
           extensions={extensions}
           onChange={(val: string) => setCode(val)}
+        />
+
+        {/* Power Mode Button */}
+        <div className="flex-shrink-0 pt-3 border-t border-slate-700">
+          <Button
+            onClick={() => setShowPowerDialog(true)}
+            disabled={!problemName || !code.trim() || isLoading}
+            className="w-full bg-yellow-600 hover:bg-yellow-700 text-white font-medium"
+          >
+            <Zap className="w-4 h-4 mr-2" />
+            Generate Optimized Solution
+          </Button>
+        </div>
+
+        {/* Code Comparison Dialog */}
+        <CodeComparisonDialog
+          open={showPowerDialog}
+          onOpenChange={setShowPowerDialog}
         />
       </div>
     </div>

@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const { problemName, language } = await req.json();
+    const { problemName, language, userCode } = await req.json();
 
     if (!problemName) {
       return new Response(
@@ -21,6 +21,11 @@ export async function POST(req: NextRequest) {
     // Set language if provided
     if (language) {
       initialState.language = language;
+    }
+
+    // Set user code if provided
+    if (userCode) {
+      initialState.userCode = userCode;
     }
 
     // Execute the graph and wait for completion
