@@ -7,7 +7,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       <nav className="flex-shrink-0 w-full h-[8vh] bg-sidebar border-b-2 border-sidebar-border">
         <div className="text-white p-4">
           <Link href="/" className="hover:text-purple-400 transition-colors">
-            <h1 className="font-mono text-xl">AgentHive</h1>
+            <h1 className="font-mono text-xl">Forcio AI</h1>
           </Link>
         </div>
       </nav>

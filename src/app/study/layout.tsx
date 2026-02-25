@@ -18,7 +18,7 @@ const StudyLayout = ({ children }: { children: React.ReactNode }) => {
     <div className="h-screen flex flex-col overflow-hidden">
       <nav className="flex-shrink-0 w-full h-[8vh] bg-sidebar border-b-2 border-sidebar-border">
         <div className="text-white p-4 flex justify-between items-center">
-          <h1 className="font-mono text-xl">AgentHive - Study Mode</h1>
+          <h1 className="font-mono text-xl">Forcio AI - Study Mode</h1>
           <Button
             variant="ghost"
             size="sm"

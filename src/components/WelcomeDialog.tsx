@@ -115,7 +115,7 @@ export default function WelcomeDialog() {
       <DialogContent showCloseButton={false} className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="text-2xl">
-            Welcome to AgentHive! 🐝
+            Welcome to Forcio AI! 🐝
           </DialogTitle>
           <DialogDescription className="text-base pt-2">
             Enter a LeetCode problem name to begin your learning session.

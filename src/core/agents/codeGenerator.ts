@@ -54,6 +54,11 @@ Requirements:
 5. Add helpful comments explaining key optimizations
 6. Ensure the solution is production-quality
 
+IMPORTANT: Return ONLY the code implementation. Do NOT include:
+- Terminal commands or execution instructions
+- Phrases like "Run this", "To test", "Execute with"
+- Text explanations outside of code comments
+
 Generate the optimized code now:`
     : `Generate a complete, production-quality solution in ${state.language} for this LeetCode problem.
 
@@ -87,12 +92,25 @@ Requirements:
 5. Include comments explaining key logic
 6. Provide the optimal solution
 
+IMPORTANT: Return ONLY the code implementation. Do NOT include:
+- Terminal commands or execution instructions
+- Phrases like "Run this", "To test", "Execute with"
+- Text explanations outside of code comments
+
 Generate the code now:`;
 
   try {
     const response = await llm.invoke([
       new SystemMessage(
-        "You are an expert competitive programmer specializing in code optimization and algorithm analysis.",
+        `You are an expert competitive programmer specializing in code optimization and algorithm analysis.
+        
+CRITICAL INSTRUCTIONS:
+- Generate ONLY the code implementation
+- DO NOT include any commands, terminal instructions, or how-to-run text
+- DO NOT include explanations outside of code comments
+- DO NOT include phrases like "Run this with...", "To test...", or "Execute..."
+- Return only the function/class implementation with inline comments
+- Output must be ready-to-use code that can be directly copied to an editor`,
       ),
       new HumanMessage(prompt),
     ]);

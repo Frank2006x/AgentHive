@@ -13,7 +13,7 @@ export default function LandingPage() {
               <Brain className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-400 via-purple-300 to-purple-400 bg-clip-text text-transparent animate-pulse">
-              AgentHive
+              Forcio AI
             </h1>
           </div>
 
@@ -76,7 +76,7 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="py-6 text-center text-slate-500 text-sm border-t border-slate-800">
         <p>
-          © 2026 AgentHive. Powered by AI to accelerate your coding journey.
+          © 2026 Forcio AI. Powered by AI to accelerate your coding journey.
         </p>
       </footer>
     </div>
